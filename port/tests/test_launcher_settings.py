@@ -21,12 +21,19 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
 
     def test_high_detail_and_performance_resolutions_are_selectable(self):
         self.assertEqual(RENDER_RESOLUTIONS[0], 'native')
-        for resolution in ('1440p', '1800p', '4K', '800p', '720p', '480p'):
+        for resolution in ('1440p', '1800p', '4K', '900p', '800p', '720p', '480p'):
             self.assertIn(resolution, RENDER_RESOLUTIONS)
 
     def test_profiles_are_user_selected_and_customizable(self):
         core = dict(CORE_DEFAULTS)
         self.assertEqual(graphics_preset(core), 'quality')
+        self.assertTrue(apply_graphics_preset(core, 'balanced_plus'))
+        self.assertEqual((core['render_resolution'], core['fsr1'], core['rcas']),
+                         ('900p', '1', '1'))
+        self.assertEqual(graphics_preset(core), 'balanced_plus')
+        self.assertEqual(core['stale_readback'], CORE_DEFAULTS['stale_readback'])
+        self.assertEqual(core['async_shaders'], CORE_DEFAULTS['async_shaders'])
+        self.assertEqual(core['fps_limit'], CORE_DEFAULTS['fps_limit'])
         self.assertTrue(apply_graphics_preset(core, 'balanced'))
         self.assertEqual((core['render_resolution'], core['fsr1'], core['rcas']),
                          ('800p', '1', '1'))
