@@ -31,11 +31,11 @@ class ProfileRendererV2Test(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             csv = Path(folder) / 'renderer.csv'
             csv.write_text(
-                'time_ns,interval_ms,flips,draw_ms,queue_reads,queue_fallbacks\\n'
-                '1,1000,10,0,0,0\\n'
-                '2,1000,10,0,0,0\\n'
-                '3,1000,0,0,0,0\\n'
-                '4,1000,20,0,3,1\\n'
+                'time_ns,interval_ms,flips,draw_ms,queue_reads,queue_fallbacks\n'
+                '1,1000,10,0,0,0\n'
+                '2,1000,10,0,0,0\n'
+                '3,1000,0,0,0,0\n'
+                '4,1000,20,0,3,1\n'
             )
             profile = profile_csv(csv)
             self.assertEqual(profile['samples'], 2)
