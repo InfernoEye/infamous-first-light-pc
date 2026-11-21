@@ -2767,12 +2767,12 @@ const ComputePipeline* PipelineCache::GetComputePipeline(iss::g4::CpOwner owner)
     auto& owner_key = owner == iss::g4::CpOwner::Graphics ? compute_key : asc_lookup.compute_key;
     auto& owner_infos = owner == iss::g4::CpOwner::Graphics ? infos : asc_lookup.infos;
     auto& owner_modules = owner == iss::g4::CpOwner::Graphics ? modules : asc_lookup.modules;
-    // Opt-in exact-key compute pipeline lookup. The graphics and ASC command
-    // processors have independent maps and memos: never reuse a pointer across
-    // owners, even when their keys happen to match.
+    // Exact-key compute pipeline lookup (on by default, =0 to disable).
+    // Graphics and ASC have independent maps and memos: never reuse a
+    // pipeline pointer across owners, even when their keys happen to match.
     static const bool compute_memo_enabled = [] {
         const char* env = std::getenv("ISS_COMPUTE_PIPELINE_MEMO");
-        return env && env[0] == '1';
+        return !env || env[0] != '0';
     }();
     auto& owner_memo = owner == iss::g4::CpOwner::Graphics ? compute_pipeline_memo
                                                             : asc_compute_pipeline_memo;
