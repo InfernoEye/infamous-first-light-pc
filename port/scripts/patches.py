@@ -74,7 +74,7 @@ SCREEN_SPACE_IMMS=((3,'h'),(11,'w'))
 MOVIE_SHAPE=struct.pack('<2f',16.0,9.0)
 MOVIE_QUAD=struct.pack('<4f',-1.0,-1.0,1.0,1.0)
 MOVIE_QUAD_AFTER=0x180
-RESOLUTION_HEIGHTS={'480p':480,'720p':720,'800p':800,'1440p':1440,'1800p':1800}
+RESOLUTION_HEIGHTS={'480p':480,'720p':720,'800p':800,'1440p':1440,'1800p':1800,'4K':2160}
 
 
 def render_size(name):
