@@ -33,6 +33,8 @@ STRINGS = {
                         'If something is wrong, switch back to renderer v2.'},
     'graphics_preset': {'ru': 'Профиль графики', 'en': 'Graphics preset'},
     'graphics_preset_quality': {'ru': 'Качество — 1080p', 'en': 'Quality — native 1080p'},
+    'graphics_preset_balanced_plus': {'ru': 'Баланс+ — 900p + FSR',
+                                      'en': 'Balanced+ — 900p + FSR'},
     'graphics_preset_balanced': {'ru': 'Баланс — 800p + FSR', 'en': 'Balanced — 800p + FSR'},
     'graphics_preset_performance': {'ru': 'Производительность — 720p + FSR',
                                     'en': 'Performance — 720p + FSR'},
