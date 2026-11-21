@@ -65,9 +65,9 @@ DISPLAY_MODES = ('windowed', 'borderless', 'fullscreen')
 FPS_LIMITS = ('30', '60', '120', '240', '0')
 # Offered render resolutions; tlg.ini may hold any of graphics_options.py RESOLUTIONS (kept as
 # they are, and shown while chosen).
-RENDER_RESOLUTIONS = ('native', '1440p', '1800p', '4K', '800p', '720p', '480p')
+RENDER_RESOLUTIONS = ('native', '1440p', '1800p', '4K', '900p', '800p', '720p', '480p')
 ASPECTS = ('16:9', '21:9', '32:9', 'auto')
-ALL_RENDER_RESOLUTIONS = ('native', '480p', '720p', '800p', '1440p', '1800p', '4K')
+ALL_RENDER_RESOLUTIONS = ('native', '480p', '720p', '800p', '900p', '1440p', '1800p', '4K')
 
 # Optional convenience presets, not hidden quality locks. All other options remain editable.
 # Quality keeps the new-install defaults; Balanced / Performance reduce actual scene pixels.
