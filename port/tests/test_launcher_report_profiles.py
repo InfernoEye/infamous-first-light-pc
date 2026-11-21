@@ -36,7 +36,7 @@ class RendererReportProfileTest(unittest.TestCase):
     def test_reject_large_and_symlink(self):
         with tempfile.TemporaryDirectory() as folder:
             accepted = self.create_csv(folder, "20261121-120000-000001")
-            self.create_csv(folder, "20261121-120001-000001", "0,1000,15,1\n" * 150000)
+            self.create_csv(folder, "20261121-120001-000001", "0,1000,15,1\n" * 220000)
             source = self.create_csv(folder, "20261121-120002-000001")
             link = source.with_name("renderer-v2-20261121-120003-000001.csv")
             try:
