@@ -69,6 +69,32 @@ RENDER_RESOLUTIONS = ('native', '1440p', '1800p', '4K', '800p', '720p')
 ASPECTS = ('16:9', '21:9', '32:9', 'auto')
 ALL_RENDER_RESOLUTIONS = ('native', '480p', '720p', '800p', '1440p', '1800p', '4K')
 
+# Optional convenience presets, not hidden quality locks. All other options remain editable.
+# Quality keeps the new-install defaults; Balanced / Performance reduce actual scene pixels.
+GRAPHICS_PRESETS = {
+    'quality': {'render_resolution': 'native', 'fsr1': '1', 'rcas': '1'},
+    'balanced': {'render_resolution': '800p', 'fsr1': '1', 'rcas': '1'},
+    'performance': {'render_resolution': '720p', 'fsr1': '1', 'rcas': '0'},
+}
+
+
+def graphics_preset(core):
+    """The current selection, or custom if the player changed any of its fields."""
+    for name, values in GRAPHICS_PRESETS.items():
+        if all(core.get(key) == value for key, value in values.items()):
+            return name
+    return 'custom'
+
+
+def apply_graphics_preset(core, name):
+    """Change only render size and scaling; never touch readbacks, shaders or frame limits."""
+    values = GRAPHICS_PRESETS.get(name)
+    if values is None:
+        return False
+    core.update(values)
+    return True
+
+
 LAUNCHER_DEFAULTS = {
     'game_dir': '',
     'game_language': 'auto',
