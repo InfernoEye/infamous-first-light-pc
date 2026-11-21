@@ -50,9 +50,11 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             self.assertEqual(performance_profile_env(folder, '1'), {})
             env = performance_profile_env(folder, '2', '20261121-123456-000001')
-            self.assertEqual(env['ISS_DEEP_PROFILE'], '1')
+            # Selecting profiling must not secretly activate high-overhead
+            # CPU scopes or command-buffer instrumentation during save loading.
+            self.assertNotIn('ISS_DEEP_PROFILE', env)
+            self.assertNotIn('TLG_DCB_STATS', env)
             self.assertEqual(env['TLG_FRAME_STATS'], '1')
-            self.assertEqual(env['TLG_DCB_STATS'], '1')
             csv = Path(env['ISS_DEEP_LOG'])
             self.assertEqual(csv.parent, Path(folder).resolve() / 'profiling')
             self.assertEqual(csv.suffix, '.csv')
