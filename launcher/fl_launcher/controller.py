@@ -9,7 +9,8 @@ from . import game, report, saves, symbols, trophies
 from .i18n import STRINGS, UI_LANGUAGES, Texts
 from .runner import GameRunner, open_folder, system_language_key
 from .settings import (ASPECTS, CORE_DEFAULTS, DISPLAY_MODES, FPS_LIMITS, PORT, RENDER_RESOLUTIONS, TEST_BUILD, VERSION_FILE,
-                       Settings, apply_graphics_preset, consume_ini_switches, graphics_preset, parse_env)
+                       Settings, apply_graphics_preset, consume_ini_switches, graphics_preset,
+                       performance_profile_env, parse_env)
 
 LOG_LINES = 5000
 JOBS_PREFIX = 'Shader jobs: '
@@ -332,6 +333,16 @@ class Launcher(QObject):
         self._advanced = on
         self.settingsChanged.emit()
 
+    @Property(bool, notify=settingsChanged)
+    def profilePerformance(self):
+        return bool(self.settings.launcher.get('profile_performance', False))
+
+    @Slot(bool)
+    def setProfilePerformance(self, enabled):
+        self.settings.launcher['profile_performance'] = enabled
+        self.settings.save()
+        self.settingsChanged.emit()
+
     @Property(str, constant=True)
     def extraEnv(self):
         """The advanced box as stored; QML sets it once and then only writes."""
@@ -354,6 +365,10 @@ class Launcher(QObject):
         if self._advanced:
             extra.update(parse_env(self.settings.launcher['extra_env']))
         consume_ini_switches(self.settings.core, extra)
+        # Diagnostic mode is opt-in, renderer v2 only, and never touches the game's
+        # readback or shader behavior. Add it after advanced renderer variables.
+        if self.profilePerformance and self.renderer == '2':
+            extra.update(performance_profile_env(self.settings.folder, self.renderer))
         return extra
 
     def _language_id(self):
