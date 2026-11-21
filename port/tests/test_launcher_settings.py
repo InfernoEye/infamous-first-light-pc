@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from launcher.fl_launcher.settings import (CORE_DEFAULTS, RENDER_RESOLUTIONS, Settings,
                                            apply_graphics_preset, consume_ini_switches,
-                                           graphics_preset, performance_profile_env)
+                                           graphics_preset)
 
 
 class LauncherGraphicsSettingsTest(unittest.TestCase):
@@ -46,21 +46,16 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
         self.assertTrue(apply_graphics_preset(core, 'quality'))
         self.assertEqual(graphics_preset(core), 'quality')
 
-    def test_renderer_v2_profiling_is_explicit_and_sandboxed(self):
+    def test_retired_profiling_setting_is_ignored(self):
+        # Older launcher.json may have profile_performance=true. The recovery
+        # launcher must not re-enable the renderer profiler or write a CSV.
         with tempfile.TemporaryDirectory() as folder:
-            self.assertEqual(performance_profile_env(folder, '1'), {})
-            env = performance_profile_env(folder, '2', '20261121-123456-000001')
-            # Selecting profiling must not secretly activate high-overhead
-            # CPU scopes or command-buffer instrumentation during save loading.
-            self.assertNotIn('ISS_DEEP_PROFILE', env)
-            self.assertNotIn('TLG_DCB_STATS', env)
-            self.assertEqual(env['TLG_FRAME_STATS'], '1')
-            csv = Path(env['ISS_DEEP_LOG'])
-            self.assertEqual(csv.parent, Path(folder).resolve() / 'profiling')
-            self.assertEqual(csv.suffix, '.csv')
-            self.assertTrue(csv.parent.is_dir())
-            with self.assertRaises(ValueError):
-                performance_profile_env(folder, '2', '../outside')
+            config = Path(folder) / 'launcher.json'
+            config.write_text('{"profile_performance": true, "renderer": "2"}', encoding='utf-8')
+            settings = Settings(folder)
+            self.assertNotIn('profile_performance', settings.launcher)
+            settings.save()
+            self.assertNotIn('profile_performance', Settings(folder).launcher)
 
     def test_existing_values_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
