@@ -46,17 +46,27 @@ def profile_csv(path, skip=2):
                 rows.append(values)
             except (TypeError, ValueError) as exc:
                 raise ValueError(f'{path}: bad sample at line {line}: {exc}') from exc
-    usable = [r for r in rows[skip:] if r['flips']]
-    if not usable:
+    # Zero-flip windows are the strongest hitch signal; never exclude their
+    # wall time from overall FPS (the old analyzer did exactly that).
+    usable = rows[skip:]
+    flips = sum(r['flips'] for r in usable)
+    if not usable or not flips:
         return {'path': str(path), 'samples': 0, 'warning': 'No timed frames after warmup'}
     wall = sum(r['interval_ms'] for r in usable)
-    flips = sum(r['flips'] for r in usable)
+    elapsed_ms = sum(r['interval_ms'] for r in rows[:skip])
+    windows = []
+    for r in usable:
+        windows.append((elapsed_ms / 1000, 1000 * r['flips'] / r['interval_ms']))
+        elapsed_ms += r['interval_ms']
+    slowest = sorted(windows, key=lambda pair: (pair[1], pair[0]))[:5]
+    phases_recorded = any(r[phase] > 0 for r in usable for phase in PHASES)
     phases = sorted(
         [{'name': name, 'ms_per_frame': sum(r[name] for r in usable) / flips,
           'ms_per_second': 1000 * sum(r[name] for r in usable) / wall}
          for name in PHASES], key=lambda x: -x['ms_per_frame'])
     return {'path': str(path), 'samples': len(usable), 'frames': flips,
             'fps': 1000 * flips / wall, 'phases': phases,
+            'cpu_phases_recorded': phases_recorded, 'slowest_windows': slowest,
             'queue_reads': sum(r['queue_reads'] for r in usable),
             'queue_fallbacks': sum(r['queue_fallbacks'] for r in usable)}
 
@@ -67,16 +77,25 @@ def render(profile):
     result = [
         profile['path'],
         f"{profile['frames']} frames, {profile['samples']} samples, {profile['fps']:.1f} FPS",
-        'CPU phase time per presented frame (nested categories may overlap):',
+        'Slowest one-second windows (approximate time since capture began):',
     ]
     result.extend(
-        f"  {entry['ms_per_frame']:8.3f} ms/frame  "
-        f"{entry['ms_per_second']:8.1f} ms/s   {PHASES[entry['name']]}"
-        for entry in profile['phases'] if entry['ms_per_frame'] >= 0.001
+        f"  {second:6.1f}s: {fps:5.1f} FPS" for second, fps in profile['slowest_windows']
     )
+    if profile['cpu_phases_recorded']:
+        result.append('CPU phase time per presented frame (nested categories may overlap):')
+        result.extend(
+            f"  {entry['ms_per_frame']:8.3f} ms/frame  "
+            f"{entry['ms_per_second']:8.1f} ms/s   {PHASES[entry['name']]}"
+            for entry in profile['phases'] if entry['ms_per_frame'] >= 0.001
+        )
+    else:
+        result.append('Detailed CPU scopes are OFF (low-impact mode); no CPU phase timings captured.')
     result.append(f"Readback queue: {profile['queue_reads']} reads; "
                   f"{profile['queue_fallbacks']} fallbacks")
-    result.append('NOTE: phase times can overlap; these are CPU timings, not GPU pass times.')
+    result.append('NOTE: one-second samples can reveal stalls but not individual frame times.')
+    if profile['cpu_phases_recorded']:
+        result.append('CPU phase times overlap and are not GPU pass times.')
     return '\n'.join(result)
 
 
