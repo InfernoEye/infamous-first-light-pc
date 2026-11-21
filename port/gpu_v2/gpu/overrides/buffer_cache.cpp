@@ -2461,15 +2461,36 @@ void BufferCache::FinishReadback(size_t index) {
 
     if (!readback.copies.empty()) {
         readback.download.Invalidate();
-        for (const auto& copy : readback.copies) {
-            const VAddr copy_start = readback.arena_base + copy.srcOffset;
-            const VAddr copy_end = copy_start + copy.size;
-            const u8* src = readback.download.mapped + (copy.dstOffset - readback.download.offset);
-            iss::readback::ForEachCopyIntersection(
-                pages, copy_start, copy_end, [&](VAddr lo, VAddr hi) {
-                    memory->TryWriteBacking(std::bit_cast<u8*>(lo), src + (lo - copy_start),
-                                            hi - lo);
-                });
+        // The usual one-to-four dirty ranges keep the original tight loop;
+        // dispatch once per completed readback, not once per GPU copy. For a
+        // fragmented window, skip intervals outside each copy with lower_bound.
+        if (pages.size() <= 4) {
+            for (const auto& copy : readback.copies) {
+                const VAddr copy_start = readback.arena_base + copy.srcOffset;
+                const VAddr copy_end = copy_start + copy.size;
+                const u8* src =
+                    readback.download.mapped + (copy.dstOffset - readback.download.offset);
+                for (const auto& [start, end] : pages) {
+                    const VAddr lo = std::max(copy_start, start);
+                    const VAddr hi = std::min(copy_end, end);
+                    if (lo < hi) {
+                        memory->TryWriteBacking(std::bit_cast<u8*>(lo), src + (lo - copy_start),
+                                                hi - lo);
+                    }
+                }
+            }
+        } else {
+            for (const auto& copy : readback.copies) {
+                const VAddr copy_start = readback.arena_base + copy.srcOffset;
+                const VAddr copy_end = copy_start + copy.size;
+                const u8* src =
+                    readback.download.mapped + (copy.dstOffset - readback.download.offset);
+                iss::readback::ForEachCopyIntersection(
+                    pages, copy_start, copy_end, [&](VAddr lo, VAddr hi) {
+                        memory->TryWriteBacking(std::bit_cast<u8*>(lo),
+                                                src + (lo - copy_start), hi - lo);
+                    });
+            }
         }
         // Guest memory changed under copies taken before (after the writes: a copy that saw the
         // new count saw the new data).
