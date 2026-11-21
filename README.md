@@ -134,6 +134,12 @@ does not launch the game, compile shaders, or change any files. A malformed
 SPIR-V file is worth inspection, but a valid header cannot establish shader
 correctness.
 
+If the historical `data/logs/run-*.log` files have already been removed, do
+**not** recreate them by running the game. The auditor also works *without*
+logs: `python3 scripts/audit_v2_cache.py --cache-root data/user/gpu-14`.
+If this cache directory no longer exists, there is nothing left to inventory;
+the preserved 06:41/06:50 log comparison is still documented in this PR.
+
 The renderer already supports **non-destructive cache isolation** by launching
 with `ISS_PIPELINE_CACHE_ROOT=/absolute/path/to/new/empty/cache`. That
 selects a different cache root without removing the original cache or
