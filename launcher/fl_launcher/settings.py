@@ -73,6 +73,8 @@ ALL_RENDER_RESOLUTIONS = ('native', '480p', '720p', '800p', '900p', '1440p', '18
 # Quality keeps the new-install defaults; Balanced / Performance reduce actual scene pixels.
 GRAPHICS_PRESETS = {
     'quality': {'render_resolution': 'native', 'fsr1': '1', 'rcas': '1'},
+    # Explicit opt-in: keep the existing working Quality and Balanced presets unchanged.
+    'balanced_plus': {'render_resolution': '900p', 'fsr1': '1', 'rcas': '1'},
     'balanced': {'render_resolution': '800p', 'fsr1': '1', 'rcas': '1'},
     'performance': {'render_resolution': '720p', 'fsr1': '1', 'rcas': '0'},
 }
