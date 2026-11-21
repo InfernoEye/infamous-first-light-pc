@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Standalone: c++ -std=c++20 -O2 -Wall -Wextra -Werror -Iport/gpu_v2/gpu \
-//   port/tests/test_v2_compute_pipeline_memo.cpp -o /tmp/first-light-compute-memo-test
+// Compile and run with a single shell line (no line-continuation backslashes):
+// c++ -std=c++20 -O2 -Wall -Wextra -Werror -Iport/gpu_v2/gpu port/tests/test_v2_compute_pipeline_memo.cpp -o /tmp/first-light-compute-test && /tmp/first-light-compute-test
 #include <cassert>
 #include <cstdint>
 #include <memory>
