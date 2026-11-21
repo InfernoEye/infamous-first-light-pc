@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include "tlg_graphics.h"
+#include "../gpu_v2/gpu/fault_draw_guard.h"
 #include "tlg_settings.h"
 
 namespace G = TlgGraphics;
@@ -48,6 +49,13 @@ int main() {
     assert(!G::V2RcasEnabled(false, 1280, 720, 1920, 1080, true));
     assert(!G::V2RcasEnabled(true, 2560, 1080, 1920, 1080, true));
     assert(!G::V2RcasEnabled(true, 1920, 1080, 2560, 1080, true));
+    // Strictly opt-in diagnostic: only the repeated indexed draw marker matches.
+    namespace F = iss::fault_draw_guard;
+    assert(F::Matches(true, 3789, 0x04e70448ull, 0x258acc2bull));
+    assert(!F::Matches(false, 3789, 0x04e70448ull, 0x258acc2bull));
+    assert(!F::Matches(true, 3788, 0x04e70448ull, 0x258acc2bull));
+    assert(!F::Matches(true, 3789, 0x04e70449ull, 0x258acc2bull));
+    assert(!F::Matches(true, 3789, 0x04e70448ull, 0x258acc2aull));
     assert(G::EffectiveFps(0, 120) == 120 && G::EffectiveFps(240, 120) == 120 && G::EffectiveFps(60, 240) == 60);
     // An unpatched engine steps 1/60 s per frame: presenting faster speeds the game up.
     assert(G::PresentLimit(120, 60) == 60 && G::PresentLimit(240, 120) == 120 && G::PresentLimit(240, 240) == 240);
