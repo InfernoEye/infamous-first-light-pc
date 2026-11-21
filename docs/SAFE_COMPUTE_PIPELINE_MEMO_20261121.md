@@ -53,6 +53,35 @@ improvement on your RX 6900 XT. The slight alternating-key overhead is
 why this patch is **never enabled automatically**. Do not merge on
 the basis of synthetic benchmark numbers.
 
+## Linux: first-time build in a separate worktree
+
+A new Git worktree does not contain the compiled `port/out/` artifacts or
+the previously provided Vulkan Memory Allocator (`vk_mem_alloc.h`) header.
+If CMake stops at `Could not find VMA_INCLUDE_DIR`, copy the header from a
+working sibling worktree into this one; never change the stable checkout.
+
+```bash
+cd ~/infamous-first-light-compute/port
+mkdir -p out/deps/vma
+# Check available sibling builds first:
+find ~/infamous-first-light-readback/port/out/deps \
+     ~/infamous-first-light-fps/port/out/deps \
+     ~/infamous-first-light-pc/port/out/deps \
+     /usr/include -name vk_mem_alloc.h -type f 2>/dev/null
+# Copy the header from any existing path above to out/deps/vma/vk_mem_alloc.h.
+cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DTLG_LTO=OFF -DTLG_PGO=off -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ -DVMA_INCLUDE_DIR="$PWD/out/deps/vma"
+cmake -S gpu_v2 -B out/gpu_v2 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+  -DVMA_INCLUDE_DIR="$PWD/out/deps/vma" \
+  -DCMAKE_CXX_STANDARD_LIBRARIES="-ltbb"
+ISS_LTO=OFF TLG_RENDERER_V2=1 bash build.sh
+```
+
+The CMake `CMP0167` Boost policy warning is informational, unrelated to
+missing VMA. Check `out/tlg-probe` and `out/tlg-probe-v2` exist before launch.
+
 ## Safe testing and rollback
 
 Keep the working `main` or PR #3 worktree completely untouched.
