@@ -3,6 +3,7 @@
 #include "repeat_census.h"
 #include "compute_phase.h"
 #include "runtime_timeline.h"
+#include "readback_intersections.h"
 #include "unified_memory.h"
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -2464,14 +2465,11 @@ void BufferCache::FinishReadback(size_t index) {
             const VAddr copy_start = readback.arena_base + copy.srcOffset;
             const VAddr copy_end = copy_start + copy.size;
             const u8* src = readback.download.mapped + (copy.dstOffset - readback.download.offset);
-            for (const auto& [start, end] : pages) {
-                const VAddr lo = std::max(copy_start, start);
-                const VAddr hi = std::min(copy_end, end);
-                if (lo < hi) {
+            iss::readback::ForEachCopyIntersection(
+                pages, copy_start, copy_end, [&](VAddr lo, VAddr hi) {
                     memory->TryWriteBacking(std::bit_cast<u8*>(lo), src + (lo - copy_start),
                                             hi - lo);
-                }
-            }
+                });
         }
         // Guest memory changed under copies taken before (after the writes: a copy that saw the
         // new count saw the new data).
