@@ -19,6 +19,8 @@
 #include "imgui/notifications_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "tlg_overlay.h"
+#include "tlg_graphics.h"
+#include "tlg_settings.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
 #include "imgui/shadnet_notifications_layer.h"
 #include "sdl_window.h"
@@ -489,11 +491,6 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         free_queue.push(&frame);
     }
 
-    fsr_settings.enable = EmulatorSettings.IsFsrEnabled();
-    fsr_settings.use_rcas = EmulatorSettings.IsRcasEnabled();
-    fsr_settings.rcas_attenuation =
-        static_cast<float>(EmulatorSettings.GetRcasAttenuation() / 1000.f);
-
     fsr_pass.Create(device, instance.GetAllocator(), num_images);
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
 
@@ -705,6 +702,12 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     };
 
     draw_scheduler.EndRendering();
+    // v2 previously read BB_FSR1/BB_RCAS only at startup, ignoring tlg.ini.
+    // Read the same live graphics settings as the classic Vulkan presenter.
+    auto& graphics = TlgSettings::Get();
+    fsr_settings.enable = graphics.fsr1.load();
+    fsr_settings.use_rcas = graphics.rcas.load();
+    fsr_settings.rcas_attenuation = TlgGraphics::RcasAttenuation(graphics.rcas_strength.load());
     // ISS_PRESENT_STREAM=1 (OFF by default: the first try, porte-y 2026-10-18, gave a black
     // screen; not debugged yet): with threaded recording the present commands (the
     // barrier and the post process pass: push descriptors and constants, no state kept) go to the
@@ -715,7 +718,8 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         const char* value = std::getenv("ISS_PRESENT_STREAM");
         return value && value[0] == '1';
     }();
-    const bool streamed = present_stream && !fsr_settings.enable &&
+    // The recorder path skips FSR and RCAS, so only use it with both off.
+    const bool streamed = present_stream && !fsr_settings.enable && !fsr_settings.use_rcas &&
                           !draw_scheduler.DirectCommandBuffer();
     vk::CommandBuffer cmdbuf{};
     if (!streamed) {
@@ -735,6 +739,14 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     auto image_view = *image.FindView(view_info).image_view;
     const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
     expected_ratio = static_cast<float>(image_size.width) / static_cast<float>(image_size.height);
+    graphics.image_width = int(image_size.width);
+    graphics.image_height = int(image_size.height);
+    graphics.window_width = int(frame->width);
+    graphics.window_height = int(frame->height);
+    graphics.rcas_applied = fsr_settings.use_rcas &&
+        TlgGraphics::FsrPassRuns(fsr_settings.enable, fsr_settings.use_rcas,
+                                 int(image_size.width), int(image_size.height),
+                                 int(frame->width), int(frame->height));
 
     // Explicit guest-output ordinals, independent of wall-clock preload duration.
     // Opt-in test capture only; unchanged dimensions and full original render output.
