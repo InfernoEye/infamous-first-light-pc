@@ -10,12 +10,12 @@ never did, the next start goes back to the last confirmed values.
 import json
 from pathlib import Path
 
-RESOLUTIONS = ('native', '480p', '720p', '800p', '1440p', '1800p', '4K')
+RESOLUTIONS = ('native', '480p', '720p', '800p', '900p', '1440p', '1800p', '4K')
 # The picture's shape (issue #7): 16:9, a wider one (the view widens at the sides, the HUD moves to
 # the edges), or the screen's (auto: the launcher passes TLG_SCREEN_SIZE; not wider than 16:9 stays
 # 16:9).
 ASPECTS = ('16:9', '21:9', '32:9', 'auto')
-RESOLUTION_HEIGHTS = {'native': 1080, '480p': 480, '720p': 720, '800p': 800, '1440p': 1440, '1800p': 1800, '4K': 2160}
+RESOLUTION_HEIGHTS = {'native': 1080, '480p': 480, '720p': 720, '800p': 800, '900p': 900, '1440p': 1440, '1800p': 1800, '4K': 2160}
 MAX_PIXELS = 3840 * 2160
 ENGINE_FPS = (60, 120, 240)
 DEFAULTS = {'render_resolution': 'native', 'engine_fps': '120', 'deferred_readback': '1',
