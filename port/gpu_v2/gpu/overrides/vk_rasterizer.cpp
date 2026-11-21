@@ -11,6 +11,7 @@
 #include "cp_path_cycles.h"
 #include "common/scope_exit.h"
 #include "deep_profile.h"
+#include "fault_draw_guard.h"
 #include "feedback_join.h"
 #include "infamous_renderer/secondary_batch_probe.h"
 #include <unordered_set>
@@ -1444,6 +1445,31 @@ std::size_t Rasterizer::Draw(bool is_indexed, u32 index_offset,
         const auto* ps = pipeline->GetStages()[static_cast<u32>(Shader::SwStage::Fragment)];
         if (diag_skip == 2 || (vs && ps && vs->pgm_hash == 0x0BEB7156 &&
                                ps->pgm_hash == 0x6353E48B)) {
+            return 0;
+        }
+    }
+    // Diagnostic isolation only: the 21:9 First Light Continue hang repeatedly ended
+    // at a blackbox marker just BEFORE this indexed draw. Markers do not prove it is
+    // the offending GPU instruction. Skipping it can corrupt scene rendering.
+    // Keep OFF unless explicitly testing whether this draw/its resources matter.
+    static const bool skip_fault_draw = [] {
+        const char* value = std::getenv("ISS_DIAG_SKIP_FAULT_DRAW");
+        return value && value[0] == '1';
+    }();
+    if (skip_fault_draw && is_indexed && regs.num_indices == iss::fault_draw_guard::IndexCount)
+        [[unlikely]] {
+        const auto* vs = pipeline->GetStages()[static_cast<u32>(Shader::SwStage::Vertex)];
+        const auto* ps = pipeline->GetStages()[static_cast<u32>(Shader::SwStage::Fragment)];
+        if (vs && ps &&
+            iss::fault_draw_guard::Matches(true, regs.num_indices, vs->pgm_hash, ps->pgm_hash)) {
+            static std::atomic<u32> skips{};
+            const u32 n = skips.fetch_add(1, std::memory_order_relaxed) + 1;
+            if (n <= 4 || (n & (n - 1)) == 0) {
+                std::fprintf(stderr, "GPU_FAULT_DRAW_BYPASS count=%u vs=0x%llx ps=0x%llx indices=%u\\n",
+                             n, static_cast<unsigned long long>(vs->pgm_hash),
+                             static_cast<unsigned long long>(ps->pgm_hash), regs.num_indices);
+            }
+            RecordSkippedWrites(*pipeline);
             return 0;
         }
     }
