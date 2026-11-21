@@ -141,7 +141,9 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         return input;
     }
 
-    DebugState.is_using_fsr = true;
+    const bool upscale = input_size.width < output_size.width &&
+                         input_size.height < output_size.height;
+    DebugState.is_using_fsr = upscale;
 
     if (output_size != cur_size) {
         ResizeAndInvalidate(output_size.width, output_size.height);
@@ -180,7 +182,10 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
             .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,
             .oldLayout = vk::ImageLayout::eUndefined,
             .newLayout = vk::ImageLayout::eGeneral,
-            .image = img.intermediary_image,
+            // The destination is the intermediate only for EASU followed by RCAS.
+            // RCAS-only and EASU-only draw straight into the output image.
+            .image = settings.use_rcas && upscale ? vk::Image(img.intermediary_image)
+                                                 : vk::Image(img.output_image),
             .subresourceRange = simple_subresource,
         },
     };
@@ -198,7 +203,9 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
     consts.Sample[0] = hdr && !settings.use_rcas ? 1 : 0;
 
     if (settings.use_rcas) {
-
+        // At a native-size output EASU would reconstruct an already native image,
+        // wasting one fullscreen compute dispatch and softening the result.
+        if (upscale) {
         { // easu
             std::array<vk::DescriptorImageInfo, 3> img_info{{
                 {
@@ -269,6 +276,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
             .imageMemoryBarrierCount = img_barrier.size(),
             .pImageMemoryBarriers = img_barrier.data(),
         });
+        }
 
         { // rcas
             consts = {};
@@ -277,7 +285,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
 
             std::array<vk::DescriptorImageInfo, 3> img_info{{
                 {
-                    .imageView = img.intermediary_image_view.get(),
+                    .imageView = upscale ? img.intermediary_image_view.get() : input,
                     .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 },
                 {
