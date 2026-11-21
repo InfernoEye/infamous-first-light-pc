@@ -17,6 +17,40 @@ At 16:9, 900p renders **1.44 million pixels instead of 2.0736 million** at nativ
 - Keep the **successful isolated shader cache** selected via `ISS_PIPELINE_CACHE_ROOT`. Using a *different empty* root for each experimental build avoids mixing compiled shaders with the stable configuration.
 - If the GPU faults again, stop. Return to the original worktree/commit and its previously working cache root. No further renderer-v2 resets are needed to prove a patch failed.
 
+## Building a detached test worktree on Linux
+
+A newly created `git worktree` has source files **but not** the previously compiled
+`port/out/tlg-probe` and `port/out/tlg-probe-v2`. Without them the launcher
+will print `tlg-probe not found: build it with build.sh or use a packaged build.`
+That is not a GPU fault. Do not copy the stable worktree's old v2 executable:
+it predates this branch's 900p parser.
+
+From the experimental worktree (assumed sibling
+`~/infamous-first-light-fps`, with original checkout at
+`~/infamous-first-light-pc`):
+
+```bash
+cd ~/infamous-first-light-fps
+git submodule update --init --recursive
+mkdir -p port/out/deps/vma
+cp ~/infamous-first-light-pc/port/out/deps/vma/vk_mem_alloc.h port/out/deps/vma/
+cd port
+cmake -S gpu -B out/gpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DTLG_LTO=OFF -DTLG_PGO=off -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++ -DVMA_INCLUDE_DIR="$PWD/out/deps/vma"
+cmake -S gpu_v2 -B out/gpu_v2 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+    -DVMA_INCLUDE_DIR="$PWD/out/deps/vma" -DCMAKE_CXX_STANDARD_LIBRARIES="-ltbb"
+ISS_LTO=OFF TLG_RENDERER_V2=1 bash build.sh
+ls -lh out/tlg-probe out/tlg-probe-v2
+```
+
+The explicit oneTBB link flag compensates for the known Linux CMake link
+issue on the exact old source baseline without changing its tracked renderer
+files. A build that cannot find `vk_mem_alloc.h` needs the VMA header supplied
+before retrying, not a copy of an old executable. Build failure logs are at
+`port/out/gpu-build.log` and `port/out/gpu_v2-build.log`.
+
 ## Suggested one-setting-at-a-time comparison
 
 First confirm the unchanged stable build still launches with its saved settings and cache. Then, in a separate worktree containing this branch, use the same gameplay scene and choose **Balanced+ — 900p + FSR** in the launcher. Leave other advanced options as they were in the stable working run. Check the startup log for an applied resolution patch (1600 × 900 or the expected aspect-converted dimensions); if patch matching fails, the game will remain at native resolution and any FPS comparison would be invalid.
