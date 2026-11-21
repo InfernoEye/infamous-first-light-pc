@@ -8,8 +8,8 @@ from PySide6.QtGui import QTextCursor
 from . import game, report, saves, symbols, trophies
 from .i18n import STRINGS, UI_LANGUAGES, Texts
 from .runner import GameRunner, open_folder, system_language_key
-from .settings import (ASPECTS, CORE_DEFAULTS, DISPLAY_MODES, FPS_LIMITS, INI_SWITCHES, PORT, RENDER_RESOLUTIONS, TEST_BUILD, VERSION_FILE,
-                       Settings, consume_ini_switches, parse_env)
+from .settings import (ASPECTS, CORE_DEFAULTS, DISPLAY_MODES, FPS_LIMITS, PORT, RENDER_RESOLUTIONS, TEST_BUILD, VERSION_FILE,
+                       Settings, apply_graphics_preset, consume_ini_switches, graphics_preset, parse_env)
 
 LOG_LINES = 5000
 JOBS_PREFIX = 'Shader jobs: '
@@ -278,6 +278,21 @@ class Launcher(QObject):
     @Property('QVariantList', notify=textsChanged)
     def fpsLimits(self):
         return [{'value': v, 'text': self.t('unlimited') if v == '0' else v} for v in FPS_LIMITS]
+
+    @Property(str, notify=settingsChanged)
+    def graphicsPreset(self):
+        return graphics_preset(self.settings.core)
+
+    @Property('QVariantList', notify=textsChanged)
+    def graphicsPresets(self):
+        return [{'value': name, 'text': self.t('graphics_preset_' + name)}
+                for name in ('quality', 'balanced', 'performance', 'custom')]
+
+    @Slot(str)
+    def setGraphicsPreset(self, name):
+        if apply_graphics_preset(self.settings.core, name):
+            self.settings.save()
+            self.settingsChanged.emit()
 
     @Property('QVariantList', notify=textsChanged)
     def renderResolutions(self):
