@@ -15,6 +15,7 @@
 #include <xxhash.h>
 #include "g4_qid1_owner.h"
 #include "graphics_pipeline_reuse.h"
+#include "compute_pipeline_memo.h"
 #include "video_core/amdgpu/scout.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
@@ -360,6 +361,8 @@ private:
     /// writer).
     std::shared_mutex program_cache_mutex;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
+    // Graphics CP owns this exact-key memo; ASC has a separate memo below.
+    iss::pipeline_memo::LastKey<ComputePipelineKey, ComputePipeline> compute_pipeline_memo;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
     std::array<Shader::RuntimeInfo, MaxShaderStages> runtime_infos{};
     /// Shader params memo (shader_params_memo): the code size and hash found for a shader
@@ -417,6 +420,7 @@ private:
     } asc_lookup;
     tsl::robin_map<size_t, std::unique_ptr<Program>> asc_program_cache;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> asc_compute_pipelines;
+    iss::pipeline_memo::LastKey<ComputePipelineKey, ComputePipeline> asc_compute_pipeline_memo;
     std::mutex module_related_pipelines_mutex;
 
     // Only if Config::collectShadersForDebug()
