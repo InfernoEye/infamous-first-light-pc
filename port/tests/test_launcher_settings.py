@@ -21,7 +21,7 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
 
     def test_high_detail_and_performance_resolutions_are_selectable(self):
         self.assertEqual(RENDER_RESOLUTIONS[0], 'native')
-        for resolution in ('1440p', '1800p', '4K', '800p', '720p', '480p'):
+        for resolution in ('1440p', '1800p', '4K', '900p', '800p', '720p', '480p'):
             self.assertIn(resolution, RENDER_RESOLUTIONS)
 
     def test_profiles_are_user_selected_and_customizable(self):
