@@ -21,7 +21,14 @@ class GraphicsOptionsTest(unittest.TestCase):
         options, reverted = g.prepare(self.ini, self.state)
         self.assertFalse(reverted)
         self.assertEqual(options, {'render_resolution': 'native', 'engine_fps': '120', 'deferred_readback': '1',
-                                   'stale_readback': '1', 'async_shaders': '1', 'aspect': '16:9'})
+                                   'stale_readback': '0', 'async_shaders': '0', 'aspect': '16:9'})
+
+    def test_explicit_overrides_and_invalid_flags(self):
+        options = g.startup_options({'deferred_readback': '0', 'stale_readback': '1',
+                                     'async_shaders': 'yes'})
+        self.assertEqual(options['deferred_readback'], '0')
+        self.assertEqual(options['stale_readback'], '1')
+        self.assertEqual(options['async_shaders'], '0')
 
     def test_render_size_of_a_shape(self):
         # 16:9 keeps the resolution's name; wider shapes take its height; narrower screens stay 16:9.
@@ -80,7 +87,7 @@ class GraphicsOptionsTest(unittest.TestCase):
 
     def test_environment(self):
         env = g.environment(g.startup_options({'stale_readback': '0'}))
-        self.assertEqual(env, {'TLG_DEFERRED_READBACK': '1', 'TLG_STALE_READBACK': '0', 'TLG_ASYNC_SHADERS': '1'})
+        self.assertEqual(env, {'TLG_DEFERRED_READBACK': '1', 'TLG_STALE_READBACK': '0', 'TLG_ASYNC_SHADERS': '0'})
 
 
 if __name__ == '__main__':

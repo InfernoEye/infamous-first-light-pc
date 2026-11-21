@@ -38,6 +38,24 @@ An unofficial native Windows port of **inFAMOUS First Light** (PS4). The game's 
 | Frame rate | about 35–45 FPS with renderer v2 (the default), 15–25 with the classic one, on a Ryzen + RTX 4070 SUPER; goal: a steady 30 FPS on mid-range PCs |
 | Known issues | the first start prepares and compiles shaders (2–3 minutes once); GPU readbacks cost frame rate (work in progress); the classic renderer flashes yellow for a moment while a save loads; some lights pulse in the boat cutscene |
 
+### Graphics quality and stability
+
+New launcher installs enable **FSR 1 spatial upscaling** when the game image is smaller than
+its window and **RCAS sharpening** at native output size. These work with First Light's Vulkan
+presenter. For higher FPS on weaker GPUs, try **800p** or **720p** render resolution; FSR 1 can
+upscale the image to a larger window. Existing `tlg.ini` choices remain unchanged.
+
+To avoid temporarily missing objects and unsafe readback shortcuts, background shader compilation
+and stale GPU readbacks now default to off. New shader compilation may stutter more, but it does
+not skip unready draws. You can still enable background shader compilation in Display settings.
+
+**FSR 3.1 is not enabled for First Light yet.** While the shared GPU library contains a temporal
+FSR 3 implementation, this game's scene-color, depth, motion-vector and jitter inputs have not
+been calibrated. Forcing `TLG_UPSCALER=fsr3` in Advanced variables is experimental and may
+shimmer or ghost, not a drop-in FSR 1 replacement. Likewise, the game's motion-blur post-process
+currently has no verified safe disable hook: a real toggle requires game-version-checked patch
+signatures or an identified graphics pass, not merely a settings checkbox.
+
 ## Playing
 
 1. Download the [latest release](https://github.com/VantageEX/infamous-first-light-pc/releases/latest) and unzip it anywhere you can write to (not Program Files).

@@ -19,7 +19,7 @@ RESOLUTION_HEIGHTS = {'native': 1080, '480p': 480, '720p': 720, '800p': 800, '14
 MAX_PIXELS = 3840 * 2160
 ENGINE_FPS = (60, 120, 240)
 DEFAULTS = {'render_resolution': 'native', 'engine_fps': '120', 'deferred_readback': '1',
-            'stale_readback': '1', 'async_shaders': '1', 'aspect': '16:9'}
+            'stale_readback': '0', 'async_shaders': '0', 'aspect': '16:9'}
 RESOLUTION_PREFIX = 'Resolution Patch'
 FPS_PREFIX = 'Frame Rate Patch'
 TEXTURE_FIX = 'Bug Fix - Texture Corruption Fix'
@@ -67,7 +67,8 @@ def startup_options(ini):
     if options['engine_fps'] not in {str(f) for f in ENGINE_FPS}:
         options['engine_fps'] = '120'
     for key in ('deferred_readback', 'stale_readback', 'async_shaders'):
-        options[key] = '0' if options[key] == '0' else '1'
+        # Invalid switches must not silently enable unsafe optimizations.
+        options[key] = options[key] if options[key] in ('0', '1') else DEFAULTS[key]
     return options
 
 

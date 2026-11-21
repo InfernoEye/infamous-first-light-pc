@@ -9,7 +9,7 @@ from . import game, report, saves, symbols, trophies
 from .i18n import STRINGS, UI_LANGUAGES, Texts
 from .runner import GameRunner, open_folder, system_language_key
 from .settings import (ASPECTS, CORE_DEFAULTS, DISPLAY_MODES, FPS_LIMITS, INI_SWITCHES, PORT, RENDER_RESOLUTIONS, TEST_BUILD, VERSION_FILE,
-                       Settings, parse_env)
+                       Settings, consume_ini_switches, parse_env)
 
 LOG_LINES = 5000
 JOBS_PREFIX = 'Shader jobs: '
@@ -338,9 +338,7 @@ class Launcher(QObject):
             extra.update(game.TEST_BUILD_ENV)
         if self._advanced:
             extra.update(parse_env(self.settings.launcher['extra_env']))
-        for variable, key in INI_SWITCHES.items():
-            value = extra.pop(variable, CORE_DEFAULTS[key])
-            self.settings.core[key] = '0' if value == '0' else '1'
+        consume_ini_switches(self.settings.core, extra)
         return extra
 
     def _language_id(self):
