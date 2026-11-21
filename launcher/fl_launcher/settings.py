@@ -108,7 +108,7 @@ LAUNCHER_DEFAULTS = {
 
 
 def performance_profile_env(folder, renderer, stamp=None):
-    """Opt-in renderer v2 timing capture. No guest memory, shaders or addresses are dumped.
+    """Opt-in low-impact renderer v2 FPS/readback capture.
 
     Always keep these diagnostics out of the game's folder and out of the source tree.
     The suffix has microseconds so two launches in the same second cannot collide.
@@ -121,11 +121,14 @@ def performance_profile_env(folder, renderer, stamp=None):
     # A test/caller-supplied stamp must not inject a directory separator.
     if not stamp.isascii() or not stamp.replace('-', '').isdigit():
         raise ValueError('Invalid profile session timestamp')
+    # The former toggle enabled heavy instrumentation in every draw/binding
+    # path. On RADV this coincided with reproducible GPUVM faults while loading
+    # a save. A one-second CSV (FPS and readback counters) is the safer default.
+    # The renderer's defaults.env keeps ISS_DEEP_PROFILE=0; advanced users can
+    # still explicitly set it to 1 to collect CPU phase timings.
     return {
-        'ISS_DEEP_PROFILE': '1',
         'ISS_DEEP_LOG': str(destination / f'renderer-v2-{stamp}.csv'),
         'TLG_FRAME_STATS': '1',
-        'TLG_DCB_STATS': '1',
     }
 
 
