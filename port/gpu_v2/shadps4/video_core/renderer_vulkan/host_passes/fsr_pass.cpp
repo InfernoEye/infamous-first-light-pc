@@ -184,8 +184,8 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
             .newLayout = vk::ImageLayout::eGeneral,
             // The destination is the intermediate only for EASU followed by RCAS.
             // RCAS-only and EASU-only draw straight into the output image.
-            .image = settings.use_rcas && upscale ? vk::Image(img.intermediary_image)
-                                                 : vk::Image(img.output_image),
+            .image = settings.use_rcas && upscale ? static_cast<vk::Image>(img.intermediary_image)
+                                                 : static_cast<vk::Image>(img.output_image),
             .subresourceRange = simple_subresource,
         },
     };
