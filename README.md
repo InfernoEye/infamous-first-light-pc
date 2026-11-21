@@ -53,6 +53,26 @@ PS `258acc2b`) at 2560×1080. Whether the extra native RCAS dispatch
 contributed is unknown; a 16:9/1920×1080 control capture is still needed.
 The classic renderer and native 16:9 settings are unaffected.
 
+### Isolating the repeated RX 6900 XT / RADV Continue GPU fault
+
+Two 2026-11-21 attempts on the *same* renderer-v2 build and settings behaved
+differently: a long playable run was followed by a Continue world-load hang.
+The later 07:30 (profiling ON) and 07:31 (profiling OFF) runs both stopped at
+the same GPU blackbox checkpoint (VS `04e70448`, PS `258acc2b`, indexed
+draw with 3789 indices); the latter reported GPUVM read fault `0x00410000`.
+The checkpoint is recorded **before** a draw; it does not prove that exact
+draw is faulty. Native-size RCAS rollback has not resolved the issue.
+
+To **isolate the suspected draw without modifying game files**, an opt-in
+diagnostic switch `ISS_DIAG_SKIP_FAULT_DRAW=1` skips *only* indexed draws
+with that exact shader pair and 3789 indices. The log prints
+`GPU_FAULT_DRAW_BYPASS` when a draw is skipped. This intentionally alters
+the image and must **not** be enabled for normal gameplay or benchmarks.
+A successful Continue would narrow the bug to this draw/its resources; a
+remaining hang would point to other work or a prior command. This switch
+is OFF by default. For safety test first at 16:9 / 1920×1080 with profiling
+OFF; if GPU resets persist, stop testing and use the classic renderer.
+
 ### Profiling a 15 FPS renderer-v2 session
 
 **Advanced → Profile renderer v2 (low impact)** is optional and only works with
