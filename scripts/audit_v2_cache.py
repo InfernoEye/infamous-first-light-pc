@@ -113,14 +113,24 @@ def cache_inventory(root: Path, serial: str = 'CUSA00575') -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('playable_log', type=Path, help='Log from the playable session')
-    parser.add_argument('failing_log', type=Path, help='Log from the first failing session')
+    parser.add_argument('playable_log', type=Path, nargs='?',
+                        help='Optional log from a playable session')
+    parser.add_argument('failing_log', type=Path, nargs='?',
+                        help='Optional log from the first failing session')
     parser.add_argument('--cache-root', type=Path,
                         help='Existing v2 GPU cache root, e.g. data/user/gpu-14')
     parser.add_argument('--serial', default='CUSA00575')
     args = parser.parse_args(argv)
-    before, after = log_snapshot(args.playable_log), log_snapshot(args.failing_log)
-    report = {'playable': before, 'failing': after, 'comparison': compare_logs(before, after)}
+    if (args.playable_log is None) != (args.failing_log is None):
+        parser.error('Provide both logs for comparison, or neither for a cache-only audit.')
+    if args.playable_log is None and args.cache_root is None:
+        parser.error('Provide two logs and/or --cache-root.')
+
+    report = {}
+    if args.playable_log is not None:
+        before, after = log_snapshot(args.playable_log), log_snapshot(args.failing_log)
+        report.update({'playable': before, 'failing': after,
+                       'comparison': compare_logs(before, after)})
     if args.cache_root is not None:
         report['current_cache'] = cache_inventory(args.cache_root, args.serial)
     print(json.dumps(report, indent=2, ensure_ascii=False))
