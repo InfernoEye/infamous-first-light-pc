@@ -644,12 +644,6 @@ Item {
                 visible: view.page === 2
                 spacing: 0
                 ToggleRow {
-                    label: launcher.tr.profile_performance
-                    description: launcher.tr.profile_performance_note
-                    checked: launcher.profilePerformance
-                    onToggled: on => launcher.setProfilePerformance(on)
-                }
-                ToggleRow {
                     id: advancedRow
                     label: launcher.tr.advanced_on
                     description: launcher.tr.advanced_note
