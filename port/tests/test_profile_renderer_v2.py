@@ -27,6 +27,26 @@ class ProfileRendererV2Test(unittest.TestCase):
             self.assertEqual(profile['phases'][0]['name'], 'draw')
             self.assertIn('nested categories may overlap', render(profile))
 
+    def test_stall_sample_is_included_and_lightweight_mode_is_reported(self):
+        with tempfile.TemporaryDirectory() as folder:
+            csv = Path(folder) / 'renderer.csv'
+            csv.write_text(
+                'time_ns,interval_ms,flips,draw_ms,queue_reads,queue_fallbacks\\n'
+                '1,1000,10,0,0,0\\n'
+                '2,1000,10,0,0,0\\n'
+                '3,1000,0,0,0,0\\n'
+                '4,1000,20,0,3,1\\n'
+            )
+            profile = profile_csv(csv)
+            self.assertEqual(profile['samples'], 2)
+            self.assertEqual(profile['frames'], 20)
+            self.assertEqual(profile['fps'], 10.0)  # Includes the full second with no flips.
+            self.assertFalse(profile['cpu_phases_recorded'])
+            self.assertEqual(profile['slowest_windows'][0], (2.0, 0.0))
+            self.assertEqual(profile['queue_reads'], 3)
+            self.assertIn('low-impact mode', render(profile))
+            self.assertIn('0.0 FPS', render(profile))
+
     def test_no_samples_and_bad_schema(self):
         with tempfile.TemporaryDirectory() as folder:
             csv = Path(folder) / 'renderer.csv'
