@@ -73,35 +73,25 @@ remaining hang would point to other work or a prior command. This switch
 is OFF by default. For safety test first at 16:9 / 1920×1080 with profiling
 OFF; if GPU resets persist, stop testing and use the classic renderer.
 
-### Profiling a 15 FPS renderer-v2 session
+### Recovery rollback: renderer-v2 profiler disabled (2026-11-21)
 
-**Advanced → Profile renderer v2 (low impact)** is optional and only works with
-renderer v2. It writes a new `data/profiling/renderer-v2-*.csv` with one-second samples of
-presented FPS and readback-queue activity. It deliberately does **not** enable expensive
-per-draw CPU instrumentation or command-buffer statistics: on an AMD RX 6900 XT with RADV,
-the old profiling mode coincided with reproducible GPU hangs / device loss when choosing
-Continue. The lightweight mode is safer, but the root cause has not yet been resolved or
-retested. Capture normal FPS with profiling OFF first.
+The opt-in renderer-v2 profiling toggle was added just before a reported
+world-load regression. The failures later happened with profiling both ON and
+OFF, so **profiling is a suspect, not a proven root cause**. For the recovery
+build we removed the launcher's profiler toggle and automatic
+`ISS_DEEP_LOG` / `ISS_DEEP_PROFILE` injection, and restored
+`gpu/deep_profile.cpp` to its implementation before the new profiling
+integration. Any saved `launcher.json` value `profile_performance=true` is
+ignored. This change deliberately prioritizes loading the world reliably
+over collecting detailed timing data.
 
-**Repeatable two-run test:** choose a save and stand still in the same scene. Record 30–60 s
-with **Quality (native 1080p)** and then 30–60 s with **Performance (720p + FSR 1)**.
-Keep renderer v2, display mode, FPS limit and gameplay location unchanged. On each run,
-enable profiling only while taking the timing sample, turn it off afterward, then compare
-the logs under `data/logs`. Analyze the CSV files with:
-
-```bash
-python scripts/profile_renderer_v2.py data/profiling/renderer-v2-1080p.csv data/profiling/renderer-v2-720p.csv
-```
-
-Substitute the actual generated CSV paths (on PowerShell, filenames can be given individually).
-The analyzer prints FPS including zero-frame stalls, the slowest one-second windows,
-and readback activity. In normal lightweight mode CPU phase times are **not** captured.
-Advanced diagnostics can explicitly opt into `ISS_DEEP_PROFILE=1` to collect CPU scope
-timings, but that heavy mode is experimental and **may trigger a GPU fault** on RADV.
-CPU scopes overlap and are not GPU timestamps; do not sum them as independent costs. If lowering the
-resolution changes FPS little, the CPU/command processor/readback path is more likely
-than a simple pixel shader cost. For more evidence, share both timing CSVs and a sanitized
-launcher performance report; inspect them before posting publicly.
+For now use normal game logs under `data/logs/` or F10 for FPS. Previously
+captured CSVs can still be summarized offline with
+`python3 scripts/profile_renderer_v2.py <csv-path>`. **Do not turn on**
+`ISS_DEEP_PROFILE` or `ISS_DEEP_LOG` through Advanced variables during
+recovery testing. If the game still resets the AMD GPU with profiling fully
+removed, switch to the classic renderer and investigate the GPU resource
+fault separately. The crash rollback has not yet been validated on hardware.
 
 ### Player-selectable graphics and FPS diagnostics
 
