@@ -41,6 +41,9 @@ if (NOT Zydis_FOUND)
 endif()
 if (NOT WIN32)
     pkg_check_modules(CRYPTO REQUIRED IMPORTED_TARGET libcrypto) # BCrypt's SHA-256 (compat/linux/bcrypt.h)
+    # This recovery build preserves the pre-profiler renderer code, with only
+    # the Linux link fix needed to resolve oneTBB symbols on Arch.
+    find_package(TBB CONFIG REQUIRED COMPONENTS tbb)
 endif()
 pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 find_package(miniz QUIET)
@@ -172,7 +175,7 @@ if (WIN32)
 else()
     target_compile_options(issgpu PRIVATE -include ${CMAKE_CURRENT_SOURCE_DIR}/compat/linux/iss_win_compat.h)
     target_link_options(issgpu PRIVATE -Wl,--allow-shlib-undefined)
-    target_link_libraries(issgpu PRIVATE PkgConfig::CRYPTO)
+    target_link_libraries(issgpu PRIVATE PkgConfig::CRYPTO TBB::tbb)
 endif()
 
 # Our overlay's ImGui Vulkan backend loads its functions itself (as in this port's own build).
