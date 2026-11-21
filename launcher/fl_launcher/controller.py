@@ -286,7 +286,7 @@ class Launcher(QObject):
     @Property('QVariantList', notify=textsChanged)
     def graphicsPresets(self):
         return [{'value': name, 'text': self.t('graphics_preset_' + name)}
-                for name in ('quality', 'balanced', 'performance', 'custom')]
+                for name in ('quality', 'balanced_plus', 'balanced', 'performance', 'custom')]
 
     @Slot(str)
     def setGraphicsPreset(self, name):
