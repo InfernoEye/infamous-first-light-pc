@@ -51,6 +51,8 @@ STRINGS = {
                'en': '4K — maximum detail (demanding)'},
     'res_800p': {'ru': '800p — для Steam Deck', 'en': '800p — for Steam Deck'},
     'res_720p': {'ru': '720p — для слабых видеокарт', 'en': '720p — for weaker graphics cards'},
+    'res_480p': {'ru': '480p — максимальная скорость (низкое качество)',
+                 'en': '480p — fastest render (low image quality)'},
     'windowed': {'ru': 'В окне', 'en': 'Windowed'},
     'borderless': {'ru': 'Окно без рамки', 'en': 'Borderless'},
     'fullscreen': {'ru': 'Полный экран', 'en': 'Fullscreen'},
