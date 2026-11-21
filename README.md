@@ -40,21 +40,26 @@ An unofficial native Windows port of **inFAMOUS First Light** (PS4). The game's 
 
 ### Graphics quality and stability
 
-New launcher installs enable **FSR 1 spatial upscaling** when the game image is smaller than
-its window and **RCAS sharpening** at native output size. These work with First Light's Vulkan
-presenter. For higher FPS on weaker GPUs, try **800p** or **720p** render resolution; FSR 1 can
-upscale the image to a larger window. Existing `tlg.ini` choices remain unchanged.
+**FSR 1 now works from the launcher on renderer v2.** The renderer previously read its own
+`BB_FSR1` setting (off by default) rather than `fsr1` from `tlg.ini`. It now reads the shared
+FSR 1 and RCAS settings, including sharpening strength, on every frame. The in-game Image tab
+(Insert / R3+L2) shows the actual game image and window resolution and whether FSR 1 is active.
 
-To avoid temporarily missing objects and unsafe readback shortcuts, background shader compilation
-and stale GPU readbacks now default to off. New shader compilation may stutter more, but it does
-not skip unready draws. You can still enable background shader compilation in Display settings.
+**For FSR 1 upscaling:** choose **720p or 800p internal resolution**, enable **FSR 1**, and
+use **borderless or fullscreen** on a higher-resolution monitor. For example, 720p → 1440p
+runs EASU reconstruction and optional RCAS. With a 1080p internal image on a 1080p screen,
+there is nothing to upscale: RCAS can sharpen the native image, but FSR 1 does not invent detail.
 
-**FSR 3.1 is not enabled for First Light yet.** While the shared GPU library contains a temporal
-FSR 3 implementation, this game's scene-color, depth, motion-vector and jitter inputs have not
-been calibrated. Forcing `TLG_UPSCALER=fsr3` in Advanced variables is experimental and may
-shimmer or ghost, not a drop-in FSR 1 replacement. Likewise, the game's motion-blur post-process
-currently has no verified safe disable hook: a real toggle requires game-version-checked patch
-signatures or an identified graphics pass, not merely a settings checkbox.
+**For real higher-quality image detail:** the launcher offers **1440p, 1800p and 4K internal
+rendering**. These change the game's actual render size using a signature-checked patch; they
+are more expensive than FSR 1 scaling. 4K now maps to 3840×2160 instead of being ignored.
+Higher internal resolutions can also downsample to a smaller display for supersampling.
+Check the log for `Patches: render resolution ...` to confirm the size patch applied; it safely
+skips game builds whose code doesn't match. High-resolution render modes are experimental
+until tested with your game version and GPU.
+
+To avoid missing objects and unsafe readback shortcuts, new installs default to background
+shader compilation and stale GPU readbacks off. Existing `tlg.ini` preferences are preserved.
 
 ## Playing
 
