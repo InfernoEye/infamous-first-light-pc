@@ -38,6 +38,21 @@ An unofficial native Windows port of **inFAMOUS First Light** (PS4). The game's 
 | Frame rate | about 35–45 FPS with renderer v2 (the default), 15–25 with the classic one, on a Ryzen + RTX 4070 SUPER; goal: a steady 30 FPS on mid-range PCs |
 | Known issues | the first start prepares and compiles shaders (2–3 minutes once); GPU readbacks cost frame rate (work in progress); the classic renderer flashes yellow for a moment while a save loads; some lights pulse in the boat cutscene |
 
+### Renderer v2 native-RCAS compatibility fallback (RADV GPU hang investigation)
+
+Renderer v2 restores its previous **direct native-size present** behavior by default:
+at a 1:1 game-image-to-output size, it skips the newly added RCAS-only compute
+pass even when `rcas=1` is saved in `tlg.ini`. FSR 1 and RCAS still work together
+for actual upscaling (both dimensions must grow). To test the experimental
+native-size RCAS pass deliberately, set `ISS_V2_NATIVE_RCAS=1` in the launch
+environment. The game logs `V2_RCAS_NATIVE_OFF` once when the fallback applies.
+
+**This is a narrow rollback, not a verified fix for the GPUVM fault.** The
+observed RADV crash occurred after an indexed game draw (VS `04e70448`,
+PS `258acc2b`) at 2560×1080. Whether the extra native RCAS dispatch
+contributed is unknown; a 16:9/1920×1080 control capture is still needed.
+The classic renderer and native 16:9 settings are unaffected.
+
 ### Profiling a 15 FPS renderer-v2 session
 
 **Advanced → Profile renderer v2 (low impact)** is optional and only works with
