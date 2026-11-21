@@ -31,6 +31,13 @@ STRINGS = {
                         'Если что-то не так, вернитесь на рендер v2.',
                   'en': 'This is an early version: expect artifacts, crashes and frame drops, no promises. '
                         'If something is wrong, switch back to renderer v2.'},
+    'graphics_preset': {'ru': 'Профиль графики', 'en': 'Graphics preset'},
+    'graphics_preset_quality': {'ru': 'Качество — 1080p', 'en': 'Quality — native 1080p'},
+    'graphics_preset_balanced': {'ru': 'Баланс — 800p + FSR', 'en': 'Balanced — 800p + FSR'},
+    'graphics_preset_performance': {'ru': 'Производительность — 720p + FSR',
+                                    'en': 'Performance — 720p + FSR'},
+    'graphics_preset_custom': {'ru': 'Свой профиль — ручные настройки',
+                               'en': 'Custom — manual settings'},
     'render_resolution': {'ru': 'Разрешение рендера', 'en': 'Render resolution'},
     'aspect': {'ru': 'Форма кадра (ultrawide)', 'en': 'Picture shape (ultrawide)'},
     'aspect_16_9': {'ru': '16:9 — как в игре', 'en': '16:9 — as the game'},
