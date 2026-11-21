@@ -39,7 +39,16 @@ void RecordReadbackTime(u64 rip,u64 address,u64 elapsed,unsigned kind){
         auto maximum=site.maximum.load(std::memory_order_relaxed);while(maximum<elapsed&&!site.maximum.compare_exchange_weak(maximum,elapsed,std::memory_order_relaxed)){}return;}
 }
 void Poll(){
-    if(!Enabled())return;static std::FILE *file=nullptr;static bool initialized=false;
+    // Allow a low-impact CSV without ISS_DEEP_PROFILE=1. The launcher uses
+    // this path after AMD RADV GPU faults occurred during heavy profiling.
+    // Phase counters stay at zero unless deep instrumentation is opted into.
+    static const bool logging=[] {
+        const char *p=std::getenv("ISS_DEEP_LOG");return p&&*p;
+    }();
+    if(!logging)return;
+    static std::mutex poll_mutex;
+    std::scoped_lock poll_guard{poll_mutex};
+    static std::FILE *file=nullptr;static bool initialized=false;
     static u64 last{},last_flips{};static std::array<u64,PhaseCount> previous_ns{},previous_calls{};
     static constexpr Common::Perf::Counter extra[]={Common::Perf::ReadbackProducerDone,Common::Perf::ReadbackProducerSubmitted,Common::Perf::ReadbackProducerQueued,Common::Perf::ReadbackProducerCurrent,Common::Perf::ReadbackQueueReads,Common::Perf::ReadbackQueueFallbacks,Common::Perf::GpuProfileComputeNs,Common::Perf::GpuProfileInFlight,Common::Perf::AscStarts,Common::Perf::AscStartDelayNs,Common::Perf::AscBusyNs,Common::Perf::GfxYields};
     static constexpr const char *extra_names[]={"producer_done","producer_submitted","producer_queued","producer_current","queue_reads","queue_fallbacks","gpu_compute_ns","gpu_pending_sum","compute_starts","compute_start_delay_ns","compute_cpu_ns","graphics_yields"};
