@@ -6,7 +6,8 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from launcher.fl_launcher.settings import CORE_DEFAULTS, Settings, consume_ini_switches
+from launcher.fl_launcher.settings import (CORE_DEFAULTS, RENDER_RESOLUTIONS, Settings,
+                                           consume_ini_switches)
 
 
 class LauncherGraphicsSettingsTest(unittest.TestCase):
@@ -16,6 +17,11 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
             self.assertEqual((core['fsr1'], core['rcas']), ('1', '1'))
             self.assertEqual((core['async_shaders'], core['stale_readback']), ('0', '0'))
             self.assertEqual(core['deferred_readback'], '1')
+
+    def test_high_detail_and_performance_resolutions_are_selectable(self):
+        self.assertEqual(RENDER_RESOLUTIONS[0], 'native')
+        for resolution in ('1440p', '1800p', '4K', '800p', '720p'):
+            self.assertIn(resolution, RENDER_RESOLUTIONS)
 
     def test_existing_values_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
