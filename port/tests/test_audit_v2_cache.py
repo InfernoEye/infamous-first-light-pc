@@ -36,6 +36,23 @@ class CacheAuditorTests(unittest.TestCase):
             self.assertIn('not proof', report['interpretation'])
             self.assertEqual(audit.log_snapshot(b)['gpu_vm_fault'], '0x00410000')
 
+    def test_cache_only_mode_without_historical_logs(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / 'CUSA00575').mkdir()
+            (root / 'CUSA00575' / 'stage.spv').write_bytes(audit.SPV_MAGIC + bytes(16))
+            # Ensure logs are not required: redirects output but never launches anything.
+            from contextlib import redirect_stdout
+            from io import StringIO
+            import json
+            output = StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(audit.main(['--cache-root', str(root)]), 0)
+            result = json.loads(output.getvalue())
+            self.assertIn('current_cache', result)
+            self.assertNotIn('comparison', result)
+            self.assertEqual(result['current_cache']['cache_file_count'], 1)
+
     def test_cache_audit_does_not_modify_files(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
