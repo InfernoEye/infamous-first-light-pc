@@ -573,6 +573,12 @@ Item {
                         onPicked: v => launcher.setRenderer(v)
                     }
                     ChoiceRow {
+                        label: launcher.tr.graphics_preset
+                        options: launcher.graphicsPresets
+                        value: launcher.graphicsPreset
+                        onPicked: v => launcher.setGraphicsPreset(v)
+                    }
+                    ChoiceRow {
                         label: launcher.tr.render_resolution
                         options: launcher.renderResolutions
                         value: launcher.core.render_resolution
