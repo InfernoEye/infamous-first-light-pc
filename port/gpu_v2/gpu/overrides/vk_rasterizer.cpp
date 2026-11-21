@@ -1465,7 +1465,7 @@ std::size_t Rasterizer::Draw(bool is_indexed, u32 index_offset,
             static std::atomic<u32> skips{};
             const u32 n = skips.fetch_add(1, std::memory_order_relaxed) + 1;
             if (n <= 4 || (n & (n - 1)) == 0) {
-                std::fprintf(stderr, "GPU_FAULT_DRAW_BYPASS count=%u vs=0x%llx ps=0x%llx indices=%u\\n",
+                std::fprintf(stderr, "GPU_FAULT_DRAW_BYPASS count=%u vs=0x%llx ps=0x%llx indices=%u\n",
                              n, static_cast<unsigned long long>(vs->pgm_hash),
                              static_cast<unsigned long long>(ps->pgm_hash), regs.num_indices);
             }
