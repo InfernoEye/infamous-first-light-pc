@@ -19,6 +19,7 @@
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
 #include "compute_phase.h"
+#include "buffer_access_merge.h"
 
 #include <vulkan/vulkan_format_traits.hpp>
 
@@ -48,26 +49,8 @@ bool Runtime::LazyReadList::Lazy() {
 }
 
 void Runtime::LazyReadList::Merge() {
-    if (pending.empty()) {
-        return;
-    }
-    // The union of the sorted list and the pending ranges, coalesced as IntervalList::Add does
-    // (overlapping or touching ranges become one).
-    pending.insert(pending.end(), merged.begin(), merged.end());
-    std::ranges::sort(pending, {}, &Interval::start);
-    merged.Clear();
-    Interval current = pending.front();
-    for (size_t i = 1; i < pending.size(); ++i) {
-        const auto& next = pending[i];
-        if (next.start <= current.end) {
-            current.end = std::max(current.end, next.end);
-        } else {
-            merged.Add(current);
-            current = next;
-        }
-    }
-    merged.Add(current);
-    pending.clear();
+    // Same sorted union as before; one pending range needs no full-list sort.
+    iss::buffer_access::MergePendingReadRanges(merged, pending);
 }
 
 static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
