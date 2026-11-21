@@ -3,7 +3,6 @@
 import json
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
 # Packaged (PyInstaller onedir): <dist>/inFAMOUS First Light.exe beside <dist>/port and <dist>/data.
@@ -102,34 +101,8 @@ LAUNCHER_DEFAULTS = {
     'ui_language': 'auto',
     'extra_env': '',   # KEY=VALUE lines for testing core switches
     'renderer': '2',   # 2: renderer v2 (port/gpu_v2) when built, else 1: the core's own renderer
-    'profile_performance': False,  # opt-in: renderer v2 timing CSV, may reduce FPS
 }
 
-
-
-def performance_profile_env(folder, renderer, stamp=None):
-    """Opt-in low-impact renderer v2 FPS/readback capture.
-
-    Always keep these diagnostics out of the game's folder and out of the source tree.
-    The suffix has microseconds so two launches in the same second cannot collide.
-    """
-    if renderer != '2':
-        return {}
-    destination = (Path(folder).resolve() / 'profiling')
-    destination.mkdir(parents=True, exist_ok=True)
-    stamp = stamp or datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-    # A test/caller-supplied stamp must not inject a directory separator.
-    if not stamp.isascii() or not stamp.replace('-', '').isdigit():
-        raise ValueError('Invalid profile session timestamp')
-    # The former toggle enabled heavy instrumentation in every draw/binding
-    # path. On RADV this coincided with reproducible GPUVM faults while loading
-    # a save. A one-second CSV (FPS and readback counters) is the safer default.
-    # The renderer's defaults.env keeps ISS_DEEP_PROFILE=0; advanced users can
-    # still explicitly set it to 1 to collect CPU phase timings.
-    return {
-        'ISS_DEEP_LOG': str(destination / f'renderer-v2-{stamp}.csv'),
-        'TLG_FRAME_STATS': '1',
-    }
 
 
 def _read_ini(path):
