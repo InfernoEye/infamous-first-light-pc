@@ -82,6 +82,17 @@ inline bool FsrPassRuns(bool fsr1, bool rcas, int in_w, int in_h, int out_w, int
     return (fsr1 && upscale) || (rcas && same);
 }
 
+/// Renderer v2 compatibility policy: the new native-size RCAS pass added another
+/// Vulkan compute workload to a path that previously presented the image directly.
+/// Keep that regression-prone path opt-in while preserving EASU+RCAS when upscaling.
+/// This does not alter the classic renderer's FsrPassRuns policy.
+inline bool V2RcasEnabled(bool requested, int in_w, int in_h, int out_w, int out_h,
+                          bool allow_native_rcas = false) {
+    if (!requested) return false;
+    if (in_w < out_w && in_h < out_h) return true;
+    return allow_native_rcas && in_w == out_w && in_h == out_h;
+}
+
 /// What the present limit really allows: the engine ceiling caps it.
 inline int EffectiveFps(int limit, int engine_fps) {
     return limit == 0 || limit > engine_fps ? engine_fps : limit;
