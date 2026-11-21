@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from launcher.fl_launcher.settings import (CORE_DEFAULTS, RENDER_RESOLUTIONS, Settings,
                                            apply_graphics_preset, consume_ini_switches,
-                                           graphics_preset)
+                                           graphics_preset, performance_profile_env)
 
 
 class LauncherGraphicsSettingsTest(unittest.TestCase):
@@ -45,6 +45,20 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
         self.assertEqual(core, before)
         self.assertTrue(apply_graphics_preset(core, 'quality'))
         self.assertEqual(graphics_preset(core), 'quality')
+
+    def test_renderer_v2_profiling_is_explicit_and_sandboxed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(performance_profile_env(folder, '1'), {})
+            env = performance_profile_env(folder, '2', '20261121-123456-000001')
+            self.assertEqual(env['ISS_DEEP_PROFILE'], '1')
+            self.assertEqual(env['TLG_FRAME_STATS'], '1')
+            self.assertEqual(env['TLG_DCB_STATS'], '1')
+            csv = Path(env['ISS_DEEP_LOG'])
+            self.assertEqual(csv.parent, Path(folder).resolve() / 'profiling')
+            self.assertEqual(csv.suffix, '.csv')
+            self.assertTrue(csv.parent.is_dir())
+            with self.assertRaises(ValueError):
+                performance_profile_env(folder, '2', '../outside')
 
     def test_existing_values_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
