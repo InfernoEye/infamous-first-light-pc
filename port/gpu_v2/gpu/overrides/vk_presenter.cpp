@@ -718,6 +718,15 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         graphics.rcas.load(), int(image_size.width), int(image_size.height),
         int(frame->width), int(frame->height), experimental_native_rcas);
     fsr_settings.rcas_attenuation = TlgGraphics::RcasAttenuation(graphics.rcas_strength.load());
+    if (graphics.rcas.load() && !fsr_settings.use_rcas &&
+        image_size.width == frame->width && image_size.height == frame->height) {
+        static std::atomic_flag reported = ATOMIC_FLAG_INIT;
+        if (!reported.test_and_set(std::memory_order_relaxed)) {
+            std::fprintf(stderr,
+                "V2_RCAS_NATIVE_OFF: preserving original native-present path; "
+                "ISS_V2_NATIVE_RCAS=1 enables experimental native sharpening\n");
+        }
+    }
     // ISS_PRESENT_STREAM=1 (OFF by default: the first try, porte-y 2026-10-18, gave a black
     // screen; not debugged yet): with threaded recording the present commands (the
     // barrier and the post process pass: push descriptors and constants, no state kept) go to the
