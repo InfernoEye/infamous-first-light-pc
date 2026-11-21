@@ -174,6 +174,7 @@ class EngineResolutionTest(unittest.TestCase):
         writes = engine_resolution_writes(self.elf(self.code()), '720p')
         self.assertEqual(render_size('720p'), (1280, 720))
         self.assertEqual(render_size('800p'), (1424, 800))
+        self.assertEqual(render_size('900p'), (1600, 900))
         self.assertEqual(render_size('1440p'), (2560, 1440))
         self.assertEqual(render_size('1800p'), (3200, 1800))
         self.assertEqual(render_size('4K'), (3840, 2160))
