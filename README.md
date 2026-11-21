@@ -93,6 +93,50 @@ recovery testing. If the game still resets the AMD GPU with profiling fully
 removed, switch to the classic renderer and investigate the GPU resource
 fault separately. The crash rollback has not yet been validated on hardware.
 
+### Cache-growth regression lead: playable 06:41 vs failing 06:50
+
+The last long playable session (`run-20261121-064145.log`, 294 seconds, manual
+exit 130) and the first failure (`run-20261121-065015.log`, GPU stall,
+exit 9) used the **same compiled binary** `2a2947e92141+dirty` and the same
+logged 21:9 settings with async shaders OFF. What changed across launches:
+
+| Read from run logs | Playable | Failing |
+| --- | ---: | ---: |
+| Prefetched shader/pipeline cache files | 49,701 | 54,235 |
+| Prefetched cache bytes | 597.7 MB | 643.4 MB |
+| Vulkan driver cache bytes accepted | 64,840,336 | 66,142,808 |
+| Preloaded pipeline objects | 20,111 | 23,246 |
+
+The successful run drained cache writes at shutdown; subsequent runs loaded a
+larger cache. This is **correlation**, not evidence the extra cache entries are
+invalid: normal gameplay compiles and saves shaders. The user's report that
+commit `95e0595` was working remains our last-known-good baseline.
+
+**Read-only investigation:** `scripts/audit_v2_cache.py` compares two logs and
+optionally inventories SPIR-V headers, filenames, and driver cache size:
+
+```bash
+python3 scripts/audit_v2_cache.py \
+  data/logs/run-20261121-064145.log \
+  data/logs/run-20261121-065015.log \
+  --cache-root data/user/gpu-14
+```
+
+`data/user/gpu-14` is the actual renderer-v2 `CacheDir` path in this port,
+**not** `data/user/cache`. The game cache normally lives under
+`data/user/gpu-14/CUSA00575/` and the Vulkan driver cache at
+`data/user/gpu-14/CUSA00575.vkcache` (or a ZIP in archive mode). The script
+does not launch the game, compile shaders, or change any files. A malformed
+SPIR-V file is worth inspection, but a valid header cannot establish shader
+correctness.
+
+The renderer already supports **non-destructive cache isolation** by launching
+with `ISS_PIPELINE_CACHE_ROOT=/absolute/path/to/new/empty/cache`. That
+selects a different cache root without removing the original cache or
+changing the save directory. This switch is for a *later deliberate comparison*,
+not an instruction to repeat GPU-reset tests now. Do not delete or rename any
+cache or save files. The GPUVM fault remains unresolved.
+
 ### Player-selectable graphics and FPS diagnostics
 
 The launcher has an optional **Graphics preset** picker with **Quality** (native 1080p,
