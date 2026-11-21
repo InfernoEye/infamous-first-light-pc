@@ -7,7 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from launcher.fl_launcher.settings import (CORE_DEFAULTS, RENDER_RESOLUTIONS, Settings,
-                                           consume_ini_switches)
+                                           apply_graphics_preset, consume_ini_switches,
+                                           graphics_preset)
 
 
 class LauncherGraphicsSettingsTest(unittest.TestCase):
@@ -22,6 +23,28 @@ class LauncherGraphicsSettingsTest(unittest.TestCase):
         self.assertEqual(RENDER_RESOLUTIONS[0], 'native')
         for resolution in ('1440p', '1800p', '4K', '800p', '720p'):
             self.assertIn(resolution, RENDER_RESOLUTIONS)
+
+    def test_profiles_are_user_selected_and_customizable(self):
+        core = dict(CORE_DEFAULTS)
+        self.assertEqual(graphics_preset(core), 'quality')
+        self.assertTrue(apply_graphics_preset(core, 'balanced'))
+        self.assertEqual((core['render_resolution'], core['fsr1'], core['rcas']),
+                         ('800p', '1', '1'))
+        self.assertEqual(graphics_preset(core), 'balanced')
+        self.assertEqual(core['stale_readback'], CORE_DEFAULTS['stale_readback'])
+        self.assertEqual(core['async_shaders'], CORE_DEFAULTS['async_shaders'])
+        self.assertEqual(core['fps_limit'], CORE_DEFAULTS['fps_limit'])
+        self.assertTrue(apply_graphics_preset(core, 'performance'))
+        self.assertEqual((core['render_resolution'], core['fsr1'], core['rcas']),
+                         ('720p', '1', '0'))
+        core['rcas'] = '1'
+        self.assertEqual(graphics_preset(core), 'custom')
+        before = dict(core)
+        self.assertFalse(apply_graphics_preset(core, 'custom'))
+        self.assertFalse(apply_graphics_preset(core, 'invalid'))
+        self.assertEqual(core, before)
+        self.assertTrue(apply_graphics_preset(core, 'quality'))
+        self.assertEqual(graphics_preset(core), 'quality')
 
     def test_existing_values_not_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:
