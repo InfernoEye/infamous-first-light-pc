@@ -119,7 +119,11 @@ private:
             }
         }
         bool Overlaps(u64 start, u64 end) {
-            Merge();
+            // Most checks have no pending reads (especially in the default
+            // immediate-add mode). Avoid an out-of-line no-op Merge call.
+            if (!pending.empty()) {
+                Merge();
+            }
             return merged.Overlaps(start, end);
         }
         void Clear() {
