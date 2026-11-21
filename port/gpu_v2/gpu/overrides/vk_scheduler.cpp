@@ -26,6 +26,7 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
+#include <filesystem>
 #include <ctime>
 #include <string>
 #include "gpu_blackbox.h" // gpu_blackbox.inl
