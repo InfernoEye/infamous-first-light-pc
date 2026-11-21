@@ -702,11 +702,21 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     };
 
     draw_scheduler.EndRendering();
-    // v2 previously read BB_FSR1/BB_RCAS only at startup, ignoring tlg.ini.
-    // Read the same live graphics settings as the classic Vulkan presenter.
+    auto& image = texture_cache.GetImage(image_id);
+    const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
+    // Read the live graphics settings, but preserve the previous renderer-v2 behavior at
+    // native size. RCAS-only there introduced a new fullscreen compute pass and is not yet
+    // validated on RADV (Continue can lose the device during world loading).
+    // ISS_V2_NATIVE_RCAS=1 explicitly restores that experimental path.
+    static const bool experimental_native_rcas = [] {
+        const char* value = std::getenv("ISS_V2_NATIVE_RCAS");
+        return value && value[0] == '1';
+    }();
     auto& graphics = TlgSettings::Get();
     fsr_settings.enable = graphics.fsr1.load();
-    fsr_settings.use_rcas = graphics.rcas.load();
+    fsr_settings.use_rcas = TlgGraphics::V2RcasEnabled(
+        graphics.rcas.load(), int(image_size.width), int(image_size.height),
+        int(frame->width), int(frame->height), experimental_native_rcas);
     fsr_settings.rcas_attenuation = TlgGraphics::RcasAttenuation(graphics.rcas_strength.load());
     // ISS_PRESENT_STREAM=1 (OFF by default: the first try, porte-y 2026-10-18, gave a black
     // screen; not debugged yet): with threaded recording the present commands (the
@@ -735,9 +745,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     // Exclude alpha from output frame to avoid blending with UI.
     view_info.mapping.a = vk::ComponentSwizzle::eOne;
 
-    auto& image = texture_cache.GetImage(image_id);
     auto image_view = *image.FindView(view_info).image_view;
-    const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
     expected_ratio = static_cast<float>(image_size.width) / static_cast<float>(image_size.height);
     graphics.image_width = int(image_size.width);
     graphics.image_height = int(image_size.height);
