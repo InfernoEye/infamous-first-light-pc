@@ -644,6 +644,12 @@ Item {
                 visible: view.page === 2
                 spacing: 0
                 ToggleRow {
+                    label: launcher.tr.profile_performance
+                    description: launcher.tr.profile_performance_note
+                    checked: launcher.profilePerformance
+                    onToggled: on => launcher.setProfilePerformance(on)
+                }
+                ToggleRow {
                     id: advancedRow
                     label: launcher.tr.advanced_on
                     description: launcher.tr.advanced_note
@@ -654,7 +660,7 @@ Item {
                 Item { width: 1; height: 14 }
                 ScrollView {
                     width: parent.width
-                    height: parent.height - advancedRow.height - 14
+                    height: parent.height - advancedRow.height * 2 - 14
                     opacity: launcher.advanced ? 1 : 0.5
                     Behavior on opacity { NumberAnimation { duration: 200 } }
                     TextArea {
