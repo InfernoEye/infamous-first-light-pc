@@ -41,6 +41,13 @@ int main() {
     assert(G::FsrPassRuns(true, false, 1280, 720, 2560, 1440) && !G::FsrPassRuns(false, false, 1280, 720, 2560, 1440));
     assert(G::FsrPassRuns(false, true, 1920, 1080, 1920, 1080) && !G::FsrPassRuns(true, false, 1920, 1080, 1920, 1080));
     assert(!G::FsrPassRuns(true, true, 2560, 1440, 1920, 1080));  // larger image: regular scaling
+    // v2 never adds the new RCAS-only compute pass unless explicitly opted in.
+    assert(!G::V2RcasEnabled(true, 1920, 1080, 1920, 1080));
+    assert(G::V2RcasEnabled(true, 1920, 1080, 1920, 1080, true));
+    assert(G::V2RcasEnabled(true, 1280, 720, 1920, 1080));  // EASU+RCAS remains
+    assert(!G::V2RcasEnabled(false, 1280, 720, 1920, 1080, true));
+    assert(!G::V2RcasEnabled(true, 2560, 1080, 1920, 1080, true));
+    assert(!G::V2RcasEnabled(true, 1920, 1080, 2560, 1080, true));
     assert(G::EffectiveFps(0, 120) == 120 && G::EffectiveFps(240, 120) == 120 && G::EffectiveFps(60, 240) == 60);
     // An unpatched engine steps 1/60 s per frame: presenting faster speeds the game up.
     assert(G::PresentLimit(120, 60) == 60 && G::PresentLimit(240, 120) == 120 && G::PresentLimit(240, 240) == 240);
