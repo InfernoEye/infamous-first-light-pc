@@ -20,19 +20,6 @@ void ForEachCopyIntersection(const Ranges& dirty_pages, std::uint64_t copy_start
     if (copy_start >= copy_end) {
         return;
     }
-    // The common one-page case needs no binary search. Keep the original
-    // straight scan for four or fewer intervals; use the ordered search only for
-    // fragmented readbacks where it avoids repeated unrelated checks.
-    if (dirty_pages.size() <= 4) {
-        for (const auto& page : dirty_pages) {
-            const auto start = std::max(copy_start, page.first);
-            const auto end = std::min(copy_end, page.second);
-            if (start < end) {
-                visit(start, end);
-            }
-        }
-        return;
-    }
     const auto first = std::lower_bound(
         dirty_pages.begin(), dirty_pages.end(), copy_start,
         [](const auto& page, std::uint64_t address) { return page.second <= address; });
