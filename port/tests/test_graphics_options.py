@@ -33,6 +33,8 @@ class GraphicsOptionsTest(unittest.TestCase):
     def test_render_size_of_a_shape(self):
         # 16:9 keeps the resolution's name; wider shapes take its height; narrower screens stay 16:9.
         self.assertEqual(g.render_size({'render_resolution': '800p', 'aspect': '16:9'}), '800p')
+        self.assertEqual(g.render_size({'render_resolution': '900p', 'aspect': '16:9'}), '900p')
+        self.assertEqual(g.render_size({'render_resolution': '900p', 'aspect': '21:9'}), '2136x900')
         self.assertEqual(g.render_size({'render_resolution': 'native', 'aspect': '21:9'}), '2560x1080')
         self.assertEqual(g.render_size({'render_resolution': '720p', 'aspect': '32:9'}), '2560x720')
         self.assertEqual(g.render_size({'render_resolution': 'native', 'aspect': 'auto'}, '3440x1440'), '2576x1080')
