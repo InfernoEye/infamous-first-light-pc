@@ -2767,6 +2767,20 @@ const ComputePipeline* PipelineCache::GetComputePipeline(iss::g4::CpOwner owner)
     auto& owner_key = owner == iss::g4::CpOwner::Graphics ? compute_key : asc_lookup.compute_key;
     auto& owner_infos = owner == iss::g4::CpOwner::Graphics ? infos : asc_lookup.infos;
     auto& owner_modules = owner == iss::g4::CpOwner::Graphics ? modules : asc_lookup.modules;
+    // Opt-in exact-key compute pipeline lookup. The graphics and ASC command
+    // processors have independent maps and memos: never reuse a pointer across
+    // owners, even when their keys happen to match.
+    static const bool compute_memo_enabled = [] {
+        const char* env = std::getenv("ISS_COMPUTE_PIPELINE_MEMO");
+        return env && env[0] == '1';
+    }();
+    auto& owner_memo = owner == iss::g4::CpOwner::Graphics ? compute_pipeline_memo
+                                                            : asc_compute_pipeline_memo;
+    if (compute_memo_enabled) {
+        if (const ComputePipeline* previous = owner_memo.Find(owner_key)) {
+            return previous;
+        }
+    }
     const auto [it, is_new] = owner_pipelines.try_emplace(owner_key);
     if (is_new) {
         const auto pipeline_hash = std::hash<ComputePipelineKey>{}(owner_key);
@@ -2785,6 +2799,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline(iss::g4::CpOwner owner)
                                                        *pipeline_cache, owner_key, *owner_infos[0],
                                                        owner_modules[0], sdata, false, defer);
         ComputePipeline* const pipeline = it.value().get();
+        if (compute_memo_enabled) owner_memo.Remember(owner_key, pipeline);
         // Persistent permutation indexes belong to the graphics/preload partition. ASC may
         // discover the same permutations in a different order, so it must not overwrite them.
         if (owner == iss::g4::CpOwner::Graphics) RegisterPipelineData(owner_key, sdata);
@@ -2807,7 +2822,9 @@ const ComputePipeline* PipelineCache::GetComputePipeline(iss::g4::CpOwner owner)
                                        Common::Perf::NowNs() - start_ns);
         return pipeline;
     }
-    return it->second.get();
+    const ComputePipeline* pipeline = it->second.get();
+    if (compute_memo_enabled) owner_memo.Remember(owner_key, pipeline);
+    return pipeline;
 }
 
 bool PipelineCache::RefreshGraphicsKey() {
@@ -3746,6 +3763,10 @@ PipelineCache::Result PipelineCache::GetProgram(iss::g4::CpOwner owner, HwStage 
 std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,
                                                              std::span<const u32> spv_code) {
     graphics_reuse.valid = false;
+    // A replaced shader can erase entries from both compute pipeline maps.
+    // Invalidate before any destruction, including for equal shader hashes.
+    compute_pipeline_memo.Invalidate();
+    asc_compute_pipeline_memo.Invalidate();
     // Pipelines being compiled use the modules and can be erased below.
     compiler->WaitIdle();
     std::optional<vk::ShaderModule> new_module{};
