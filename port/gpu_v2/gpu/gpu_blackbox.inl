@@ -312,10 +312,12 @@ std::string JsonText(const std::string& s) {
 
 std::string OutputDir() {
     if (const char* p = std::getenv("SHADPS4_FRAME_CSV"); p && *p) {
-        std::string dir = p;
-        const size_t cut = dir.find_last_of("/\\");
-        if (cut != std::string::npos) return dir.substr(0, cut);
+        const std::filesystem::path file{p};
+        if (file.has_parent_path()) return file.parent_path().string();
     }
+    // The launcher passes its writable data directory; keep crash reports
+    // together with profiling sessions instead of in the process's cwd.
+    if (const char* p = std::getenv("TLG_DATA_DIR"); p && *p) return p;
     return ".";
 }
 
@@ -466,8 +468,8 @@ void Dump(const char* reason, const char* file_stem) {
     json += "]}\n";
 
     const std::string dir = OutputDir();
-    const std::string txt_path = dir + "\\" + file_stem + ".txt";
-    const std::string json_path = dir + "\\" + file_stem + ".json";
+    const std::string txt_path = (std::filesystem::path(dir) / (std::string(file_stem) + ".txt")).string();
+    const std::string json_path = (std::filesystem::path(dir) / (std::string(file_stem) + ".json")).string();
     if (FILE* f = std::fopen(txt_path.c_str(), "wb")) {
         std::fwrite(text.data(), 1, text.size(), f);
         std::fclose(f);
