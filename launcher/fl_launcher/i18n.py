@@ -49,6 +49,7 @@ STRINGS = {
     'res_1800p': {'ru': '1800p — очень высокая детализация', 'en': '1800p — very high detail'},
     'res_4K': {'ru': '4K — максимальная детализация (требовательно)',
                'en': '4K — maximum detail (demanding)'},
+    'res_900p': {'ru': '900p — баланс чёткости и скорости', 'en': '900p — sharper performance'},
     'res_800p': {'ru': '800p — для Steam Deck', 'en': '800p — for Steam Deck'},
     'res_720p': {'ru': '720p — для слабых видеокарт', 'en': '720p — for weaker graphics cards'},
     'res_480p': {'ru': '480p — максимальная скорость (низкое качество)',
