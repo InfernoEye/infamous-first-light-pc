@@ -49,12 +49,15 @@ CORE_DEFAULTS = {
     'display_mode': 'windowed',   # windowed / borderless / fullscreen
     'vsync': '1',
     'fps_limit': '60',            # 30, 60, 120, 240 or 0 (unlimited)
-    'fsr1': '0',
-    'rcas': '0',
+    # First Light's FSR 3 temporal inputs are not calibrated yet; prefer stable spatial scaling.
+    'fsr1': '1',
+    'rcas': '1',
     'show_fps': '0',
-    'async_shaders': '1',
+    # Unready pipelines can cause briefly missing meshes and grey flashes.
+    'async_shaders': '0',
     'deferred_readback': '1',
-    'stale_readback': '1',
+    # First Light needs accurate readbacks for neon and exposure.
+    'stale_readback': '0',
     'render_resolution': 'native',   # the game's render size (run.py: the engine's size patch)
     'aspect': '16:9',                 # the picture's shape: 16:9, 21:9, 32:9 or auto (the screen's)
 }
@@ -62,9 +65,35 @@ DISPLAY_MODES = ('windowed', 'borderless', 'fullscreen')
 FPS_LIMITS = ('30', '60', '120', '240', '0')
 # Offered render resolutions; tlg.ini may hold any of graphics_options.py RESOLUTIONS (kept as
 # they are, and shown while chosen).
-RENDER_RESOLUTIONS = ('native', '800p', '720p')
+RENDER_RESOLUTIONS = ('native', '1440p', '1800p', '4K', '800p', '720p', '480p')
 ASPECTS = ('16:9', '21:9', '32:9', 'auto')
 ALL_RENDER_RESOLUTIONS = ('native', '480p', '720p', '800p', '1440p', '1800p', '4K')
+
+# Optional convenience presets, not hidden quality locks. All other options remain editable.
+# Quality keeps the new-install defaults; Balanced / Performance reduce actual scene pixels.
+GRAPHICS_PRESETS = {
+    'quality': {'render_resolution': 'native', 'fsr1': '1', 'rcas': '1'},
+    'balanced': {'render_resolution': '800p', 'fsr1': '1', 'rcas': '1'},
+    'performance': {'render_resolution': '720p', 'fsr1': '1', 'rcas': '0'},
+}
+
+
+def graphics_preset(core):
+    """The current selection, or custom if the player changed any of its fields."""
+    for name, values in GRAPHICS_PRESETS.items():
+        if all(core.get(key) == value for key, value in values.items()):
+            return name
+    return 'custom'
+
+
+def apply_graphics_preset(core, name):
+    """Change only render size and scaling; never touch readbacks, shaders or frame limits."""
+    values = GRAPHICS_PRESETS.get(name)
+    if values is None:
+        return False
+    core.update(values)
+    return True
+
 
 LAUNCHER_DEFAULTS = {
     'game_dir': '',
@@ -141,6 +170,17 @@ class Settings:
 # the same variable in the environment: the launcher writes them to tlg.ini instead.
 # (async_shaders has its own checkbox.)
 INI_SWITCHES = {'TLG_DEFERRED_READBACK': 'deferred_readback', 'TLG_STALE_READBACK': 'stale_readback'}
+
+
+def consume_ini_switches(core, extra):
+    """Apply only explicit advanced overrides; preserve values saved by the in-game menu.
+
+    run.py reads normal readback settings from tlg.ini, not from extra env.
+    Defaulting missing advanced keys here silently overwrote existing settings.
+    """
+    for variable, key in INI_SWITCHES.items():
+        if variable in extra:
+            core[key] = '0' if extra.pop(variable) == '0' else '1'
 
 
 def parse_env(text):

@@ -174,11 +174,20 @@ class EngineResolutionTest(unittest.TestCase):
         writes = engine_resolution_writes(self.elf(self.code()), '720p')
         self.assertEqual(render_size('720p'), (1280, 720))
         self.assertEqual(render_size('800p'), (1424, 800))
+        self.assertEqual(render_size('1440p'), (2560, 1440))
+        self.assertEqual(render_size('1800p'), (3200, 1800))
+        self.assertEqual(render_size('4K'), (3840, 2160))
         setup = 0x20
         toggle = setup + 27 + 0x40
         self.assertEqual([offset for offset, _ in writes],
                          [setup + 3, setup + 10, setup + 16, setup + 23, toggle + 1, toggle + 16])
         self.assertEqual([int.from_bytes(data, 'little') for _, data in writes], [1280, 720] * 3)
+
+    def test_4k_writes_real_3840x2160_size(self):
+        from patches import engine_resolution_writes
+        values = [int.from_bytes(data, 'little') for _, data in
+                  engine_resolution_writes(self.elf(self.code()), '4K')]
+        self.assertEqual(values, [3840, 2160] * 3)
 
     def test_refuses_other_code(self):
         from patches import engine_resolution_writes

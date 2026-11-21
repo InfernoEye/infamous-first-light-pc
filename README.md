@@ -38,6 +38,54 @@ An unofficial native Windows port of **inFAMOUS First Light** (PS4). The game's 
 | Frame rate | about 35–45 FPS with renderer v2 (the default), 15–25 with the classic one, on a Ryzen + RTX 4070 SUPER; goal: a steady 30 FPS on mid-range PCs |
 | Known issues | the first start prepares and compiles shaders (2–3 minutes once); GPU readbacks cost frame rate (work in progress); the classic renderer flashes yellow for a moment while a save loads; some lights pulse in the boat cutscene |
 
+### Player-selectable graphics and FPS diagnostics
+
+The launcher has an optional **Graphics preset** picker with **Quality** (native 1080p,
+FSR 1 available and RCAS on), **Balanced** (800p + FSR 1 + RCAS), and **Performance**
+(720p + FSR 1; RCAS off to save a postprocessing pass). Players can still change
+individual settings; the preset then displays **Custom**. There is also a manual 480p
+render option for extremely limited GPUs. No preset changes GPU readback precision,
+shader compilation, the selected renderer or frame pacing.
+
+The renderer v2 FSR pass avoids running EASU at 1:1 input/output resolution when
+only sharpening is needed. Native-size RCAS now performs just one compute pass
+instead of reconstructing the already-native image first. This reduces one GPU
+dispatch and intermediate-image dependency in this case; it **does not guarantee
+an FPS increase** when game emulation, CPU synchronization or readbacks dominate.
+
+If the port stays near 15 FPS, use the **Performance** preset and test the same
+scene at 1080p and 720p. A significant gain suggests GPU/pixel cost; little
+change suggests a CPU/command-processing/readback bottleneck. The default
+`TLG_FRAME_STATS=1` logs frame statistics every 5 seconds on First Light.
+For comparisons, keep renderer v2, game location, display mode and other
+settings constant. Collect the launcher Log → Create report to diagnose
+the real bottleneck. Do **not** disable `TLG_READBACKS` or enable unsafe
+`ISS_NATIVE_PASSES` just for FPS: those paths can break neon, exposure,
+decals or other important effects on First Light.
+
+### Graphics quality and stability
+
+**FSR 1 now works from the launcher on renderer v2.** The renderer previously read its own
+`BB_FSR1` setting (off by default) rather than `fsr1` from `tlg.ini`. It now reads the shared
+FSR 1 and RCAS settings, including sharpening strength, on every frame. The in-game Image tab
+(Insert / R3+L2) shows the actual game image and window resolution and whether FSR 1 is active.
+
+**For FSR 1 upscaling:** choose **720p or 800p internal resolution**, enable **FSR 1**, and
+use **borderless or fullscreen** on a higher-resolution monitor. For example, 720p → 1440p
+runs EASU reconstruction and optional RCAS. With a 1080p internal image on a 1080p screen,
+there is nothing to upscale: RCAS can sharpen the native image, but FSR 1 does not invent detail.
+
+**For real higher-quality image detail:** the launcher offers **1440p, 1800p and 4K internal
+rendering**. These change the game's actual render size using a signature-checked patch; they
+are more expensive than FSR 1 scaling. 4K now maps to 3840×2160 instead of being ignored.
+Higher internal resolutions can also downsample to a smaller display for supersampling.
+Check the log for `Patches: render resolution ...` to confirm the size patch applied; it safely
+skips game builds whose code doesn't match. High-resolution render modes are experimental
+until tested with your game version and GPU.
+
+To avoid missing objects and unsafe readback shortcuts, new installs default to background
+shader compilation and stale GPU readbacks off. Existing `tlg.ini` preferences are preserved.
+
 ## Playing
 
 1. Download the [latest release](https://github.com/VantageEX/infamous-first-light-pc/releases/latest) and unzip it anywhere you can write to (not Program Files).
