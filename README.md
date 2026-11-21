@@ -38,6 +38,35 @@ An unofficial native Windows port of **inFAMOUS First Light** (PS4). The game's 
 | Frame rate | about 35–45 FPS with renderer v2 (the default), 15–25 with the classic one, on a Ryzen + RTX 4070 SUPER; goal: a steady 30 FPS on mid-range PCs |
 | Known issues | the first start prepares and compiles shaders (2–3 minutes once); GPU readbacks cost frame rate (work in progress); the classic renderer flashes yellow for a moment while a save loads; some lights pulse in the boat cutscene |
 
+### Profiling a 15 FPS renderer-v2 session
+
+**Advanced → Profile renderer v2 (may reduce FPS)** is an optional diagnostic switch, off
+by default and active only on renderer v2. It enables the built-in CPU phase timers and
+per-frame / command-buffer statistics; no unsafe rendering or readback optimizations are
+turned on. Each launch writes a new `data/profiling/renderer-v2-*.csv` file, with
+one-second samples of draw, texture/buffer binding, graphics pipeline and memory-sync costs.
+Capture a run **with the toggle off first** to know its normal FPS; the profiler may reduce
+the frame rate while recording.
+
+**Repeatable two-run test:** choose a save and stand still in the same scene. Record 30–60 s
+with **Quality (native 1080p)** and then 30–60 s with **Performance (720p + FSR 1)**.
+Keep renderer v2, display mode, FPS limit and gameplay location unchanged. On each run,
+enable profiling only while taking the timing sample, turn it off afterward, then compare
+the logs under `data/logs`. Analyze the CSV files with:
+
+```bash
+python scripts/profile_renderer_v2.py data/profiling/renderer-v2-1080p.csv data/profiling/renderer-v2-720p.csv
+```
+
+Substitute the actual generated CSV paths (on PowerShell, filenames can be given individually).
+The analyzer prints FPS, the busiest CPU scopes in milliseconds per presented frame, and
+readback queue activity. The scopes **overlap** (e.g. draw includes resource binding);
+do not sum them as if exclusive. Timing CSVs are *not* GPU timestamp measurements:
+a low FPS plus low CPU phase time can point to blocking/waits elsewhere. If lowering the
+resolution changes FPS little, the CPU/command processor/readback path is more likely
+than a simple pixel shader cost. For more evidence, share both timing CSVs and a sanitized
+launcher performance report; inspect them before posting publicly.
+
 ### Player-selectable graphics and FPS diagnostics
 
 The launcher has an optional **Graphics preset** picker with **Quality** (native 1080p,
