@@ -33,7 +33,7 @@ int main() {
 #endif
     assert(G::ParseDisplayMode("borderless") == G::Borderless && G::ParseDisplayMode("bogus") == G::Windowed);
     assert(G::ParseFpsLimit(240) == 240 && G::ParseFpsLimit(75) == 0);
-    assert(G::ParseResolution("800p") == 3 && G::ParseResolution("1440p") == 4 && G::ParseResolution("8K") == 0);
+    assert(G::ParseResolution("800p") == 3 && G::ParseResolution("900p") == 4 && G::ParseResolution("1440p") == 5 && G::ParseResolution("8K") == 0);
     assert(G::ParseEngineFps(240) == 240 && G::ParseEngineFps(90) == 120);
     assert(G::ParseFramesQueued(2) == 2 && G::ParseFramesQueued(0) == 0 && G::ParseFramesQueued(5) == 1);
     assert(G::ParseRcasStrength(100) == 100 && G::ParseRcasStrength(101) == 60 && G::ParseRcasStrength(-1) == 60);
