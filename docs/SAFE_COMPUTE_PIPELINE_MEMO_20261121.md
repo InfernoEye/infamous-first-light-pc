@@ -1,4 +1,4 @@
-# Experimental exact-key compute pipeline memo (21 November 2026)
+# Exact-key compute pipeline memo, enabled by default (21 November 2026)
 
 ## Baseline and scope
 
@@ -9,22 +9,24 @@ changes untouched. It is not a new renderer or shader algorithm.
 For compute dispatches, `PipelineCache::GetComputePipeline` already
 calculates the exact shader specialization key. The graphics path has a
 similar last-key shortcut; compute always probes its pipeline map.
-This patch **optionally** remembers the last exact compute key and
+This patch remembers the last exact compute key and
 pointer **within each command processor owner** (graphics and ASC
 compute have separate maps, scratch and memo entries). Matching keys
 return the same map-owned pipeline pointer; key misses still use the
 original `try_emplace` map path. When shader replacement invalidates
 pipelines, both memos are cleared **before** any map entry is removed.
 
-**The optimization is OFF by default.** Enable only for an A/B test:
+**The optimization is ON by default** following successful user gameplay tests
+showing a small subjective improvement. For an A/B comparison or rollback,
+explicitly turn it off:
 
 ```bash
-ISS_COMPUTE_PIPELINE_MEMO=1
+ISS_COMPUTE_PIPELINE_MEMO=0
 ```
 
-Unset the variable, or give it any value other than `1`, to use the
-original lookup. The flag is sampled at first compute lookup in a
-process, so fully quit the game between OFF and ON tests. It does not
+The default (unset) and `ISS_COMPUTE_PIPELINE_MEMO=1` both use the memo;
+`=0` restores the original map lookup. The flag is sampled at the first
+compute lookup in a process, so fully quit the game between OFF and ON tests. It does not
 change Vulkan commands, queue waits, readbacks, GPU bindings, pipeline
 compilation, module specialization, the scene image, or settings.
 
@@ -35,7 +37,9 @@ checks exact-key lookups, per-owner isolation, invalidation before
 shader replacement, and **100,000 seeded mixed-owner dispatches**
 against an unoptimized map. The test compiled and passed in a Linux
 container using `c++ -std=c++20 -O2 -Wall -Wextra -Werror`.
-The full renderer build and in-game comparison remain untested.
+The user completed the standalone test on their Linux system ("Tests passed"),
+then built the renderer and reported a **small subjective gameplay improvement**.
+No instrumented FPS or frametime measurements are available.
 
 An illustrative one-million-lookup microbenchmark against
 `std::unordered_map` (not the production `tsl::robin_map`) in the
@@ -50,8 +54,9 @@ same environment measured:
 These timings are only evidence of the **possible lookup tradeoff**;
 they are not FPS or frametime measurements and cannot guarantee
 improvement on your RX 6900 XT. The slight alternating-key overhead is
-why this patch is **never enabled automatically**. Do not merge on
-the basis of synthetic benchmark numbers.
+why the original map path remains available with `ISS_COMPUTE_PIPELINE_MEMO=0`.
+User-requested default enablement relies on the small positive gameplay report,
+not a claim that every possible workload is faster.
 
 ## Linux: first-time build in a separate worktree
 
@@ -92,6 +97,7 @@ Compare OFF and ON by restarting the same experimental executable with
 identical 900p FSR and game settings, in the same gameplay area.
 
 If you notice any crash, missing effects, image change, stuttering, or
-worse frametimes, remove the env variable and return immediately to
-the known working build. The fact that this is an exact-key
+worse frametimes, explicitly set `ISS_COMPUTE_PIPELINE_MEMO=0` and
+restart to restore the previous lookup. The stable commit before this
+feature is `5e0b85f1c66ce2b7047c2d1caf9a6b1ffb30571b`. The fact that this is an exact-key
 shortcut does not establish GPU-driver stability.
