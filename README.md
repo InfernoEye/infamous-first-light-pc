@@ -98,7 +98,9 @@ fault separately. The crash rollback has not yet been validated on hardware.
 The last long playable session (`run-20261121-064145.log`, 294 seconds, manual
 exit 130) and the first failure (`run-20261121-065015.log`, GPU stall,
 exit 9) used the **same compiled binary** `2a2947e92141+dirty` and the same
-logged 21:9 settings with async shaders OFF. What changed across launches:
+logged 21:9 settings with async shaders OFF. One non-graphics environment
+setting did differ: the playable run had `TLG_FRAME_STATS=1` in its game-defaults
+line and the first failure did not. What changed across launches:
 
 | Read from run logs | Playable | Failing |
 | --- | ---: | ---: |
@@ -109,7 +111,9 @@ logged 21:9 settings with async shaders OFF. What changed across launches:
 
 The successful run drained cache writes at shutdown; subsequent runs loaded a
 larger cache. This is **correlation**, not evidence the extra cache entries are
-invalid: normal gameplay compiles and saves shaders. The user's report that
+invalid: normal gameplay compiles and saves shaders. The playable session also
+completed a multi-gigabyte memory upload, so that upload size alone cannot
+explain the failure. The user's report that
 commit `95e0595` was working remains our last-known-good baseline.
 
 **Read-only investigation:** `scripts/audit_v2_cache.py` compares two logs and
